@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'church_app',
     'blog_app',
+    'library_app',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
