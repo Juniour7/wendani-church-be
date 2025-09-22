@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Django / SQLite
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+pip-wheel-metadata/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+*.pot
+*.pyc
+*.mo
+*.orig
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage / Testing
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.pytest_cache/
