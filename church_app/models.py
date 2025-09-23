@@ -11,9 +11,9 @@ class PrayerRequestForm(models.Model):
         ('thanksgiving', 'thanksgiving' ),
         ('other', 'other' ),
     ]
-    full_name = models.CharField(max_length=200)
-    email = models.EmailField()
-    phone_number = models.IntegerField()
+    full_name = models.CharField(max_length=200, blank=True, null=True) #optional
+    email = models.EmailField(blank=True, null=True) #optional
+    phone_number = models.IntegerField(blank=True, null=True) #optional
     prayer_type = models.CharField(max_length=200, choices=REQUEST_TYPE, default='personal request')
     prayer_request = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,12 +29,12 @@ class PrayerRequestForm(models.Model):
 class BaptismRequestForm(models.Model):
     """Baptismal Table to store Baptismal Requests"""
     full_name = models.CharField(max_length=200)
-    email = models.EmailField()
+    email = models.EmailField(blank=True, null=True) #optional
     phone_number = models.IntegerField()
     date_of_birth = models.DateField()
     is_baptised = models.BooleanField(default=False)
     is_study = models.BooleanField(default=False)
-    additional_information = models.TextField()
+    additional_information = models.TextField(blank=True, null=True) #optional
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -98,6 +98,8 @@ class MembershipTransferForm(models.Model):
     
     def __str__(self):
         return self.full_name
+    
+
 
 class Events(models.Model):
     """Events Table To Handle Church Events"""
@@ -159,7 +161,7 @@ class BenevolenceForm(models.Model):
 
 class ContactForm(models.Model):
     full_name = models.CharField(max_length=200)
-    email = models.EmailField()
+    email = models.EmailField(blank=True, null=True)
     phone_number = models.IntegerField()
     subject = models.CharField(max_length=100)
     message = models.TextField()
