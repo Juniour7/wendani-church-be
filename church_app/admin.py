@@ -1,12 +1,12 @@
 from django.contrib import admin
-from .models import PrayerReqestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements
 
 class AdminModel(admin.ModelAdmin):
     list_display = '__all__'
     
 
 # Register your models here.
-admin.site.register(PrayerReqestForm)
+admin.site.register(PrayerRequestForm)
 admin.site.register(BaptismRequestForm)
 admin.site.register(DedicationForm)
 admin.site.register(MembershipTransferForm)
