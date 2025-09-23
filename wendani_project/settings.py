@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'church_app',
     'blog_app',
     'library_app',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
