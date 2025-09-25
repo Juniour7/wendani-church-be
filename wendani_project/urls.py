@@ -19,10 +19,15 @@ from django.urls import path, include
 from rest_framework import routers
 from church_app import views
 
+# Blog App
+from blog_app.views import BlogAPIView, AuthorAPIView
+
 # Set up the routers
 router = routers.DefaultRouter()
 router.register(r'prayer', views.PrayerFormAPIView)
 router.register(r'baptism', views.BaptismFormAPIView)
+router.register(r'blog', BlogAPIView)
+router.register(r'author', AuthorAPIView)
 
 urlpatterns = [
     path('api/', include(router.urls)),
