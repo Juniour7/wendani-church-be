@@ -1,48 +1,55 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
 *.so
 *.egg
 *.egg-info/
 dist/
 build/
 .eggs/
+*.manifest
+*.spec
 
-# Django / SQLite
-*.sqlite3
-db.sqlite3
-media/
-staticfiles/
-
-# Virtual environment
-venv/
-ENV/
-env/
-.venv/
-pip-wheel-metadata/
-
-# IDE / Editor settings
-.vscode/
-.idea/
-*.swp
-*~
-
-# Logs
+# Django
 *.log
 *.pot
 *.pyc
 *.mo
-*.orig
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
 
-# OS files
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS Specific
 .DS_Store
 Thumbs.db
 
-# Coverage / Testing
+# pytest / coverage
 .coverage
+coverage.xml
+*.cover
+*.py,cover
 htmlcov/
-.tox/
-.mypy_cache/
-.pytest_cache/
+
+# Migrations (optional, if you don’t want to commit them initially)
+# */migrations/
+# !*/migrations/__init__.py
+
+# Deployment / CI
+*.pid
+*.seed
+*.env
+.env.*
+*.bak

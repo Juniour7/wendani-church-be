@@ -1,0 +1,51 @@
+services:
+  church_db:
+    image: mysql:8.0
+    container_name: mysql_wendani_church_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - task_manager_api_data:/var/lib/mysql
+    networks:
+      - backend
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer_api
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+  
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_api
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: church_db
+    depends_on:
+      - church_db
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  task_manager_api_data:
