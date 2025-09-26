@@ -29,10 +29,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'accounts.UserProfile'
 
 # Application definition
 
 INSTALLED_APPS = [
+    'accounts',
     'church_app',
     'blog_app',
     'library_app',

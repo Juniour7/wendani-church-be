@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements
 
 class AdminModel(admin.ModelAdmin):
-    list_display = '__all__'
+    pass
     
 
 # Register your models here.

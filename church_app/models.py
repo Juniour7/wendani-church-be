@@ -1,6 +1,21 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+import os
 
-# Create your models here.
+# Announcements File Type Validaten Function
+def validate_file_extension(value):
+    ext = os.path.splitext(value.name)[1] # get the file extension
+    valid_extensions = ['.pdf']
+    if ext.lower() not in valid_extensions:
+        raise ValidationError('Unsupported file extension. Allowed: .pdf')
+
+# File Size Validation
+def valdate_file_size(value):
+    filesize = value.size
+    if filesize > 10 * 1024 * 1024: # 5MB limit
+        raise ValidationError('Maximum file size allowed is 5MB')
+
+# Models
 class PrayerRequestForm(models.Model):
     """Prayer Request Form to store Prayer requests"""
     REQUEST_TYPE = [
@@ -127,7 +142,7 @@ class Events(models.Model):
     description = models.TextField()
     time = models.TimeField()
     department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES)
-    image = models.ImageField(upload_to='images/')
+    image = models.ImageField(upload_to='events/')
     created_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -175,8 +190,11 @@ class ContactForm(models.Model):
 
 
 class Announcements(models.Model):
-    file = models.FileField()
-    description = models.TextField
+    file = models.FileField(
+        upload_to='announcements/',
+        validators=[validate_file_extension, valdate_file_size]
+    )
+    description = models.TextField()
     title = models.CharField(max_length=200)
     uploaded_date = models.DateField()
     size = models.CharField(max_length=20)

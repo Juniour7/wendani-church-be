@@ -22,12 +22,23 @@ from church_app import views
 # Blog App
 from blog_app.views import BlogAPIView, AuthorAPIView
 
+
+# Custom Admin
+from accounts.views import UserViewSet
+
 # Set up the routers
 router = routers.DefaultRouter()
 router.register(r'prayer', views.PrayerFormAPIView)
 router.register(r'baptism', views.BaptismFormAPIView)
+router.register(r'dedication', views.DedicationFormAPIView)
+router.register(r'membership', views.MembershipFormAPIView)
+router.register(r'benevolence', views.BenevolenceFormAPIView)
+router.register(r'contact', views.ContactFormAPIView)
+router.register(r'announcements', views.AnnouncementsAPIView)
+router.register(r'events', views.EventsAPIView)
 router.register(r'blog', BlogAPIView)
 router.register(r'author', AuthorAPIView)
+router.register(r'users', UserViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),
