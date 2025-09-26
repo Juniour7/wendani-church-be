@@ -1,5 +1,7 @@
 from rest_framework import serializers
+
 from .models import Author, Blog, Comments
+
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,7 +25,7 @@ class CommentsSerializer(serializers.ModelSerializer):
 
 
 class BlogSerializer(serializers.ModelSerializer):
-    comments = CommentsSerializer(many=True)
+    comments = CommentsSerializer(many=True,required=False)
     author = AuthorSerializer()
 
     class Meta:
