@@ -15,7 +15,7 @@ services:
 
   adminer:
     image: adminer:latest
-    container_name: adminer_api
+    container_name: chruch_adminer_api
     restart: always
     ports:
       - "8080:8080"
@@ -27,7 +27,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: django_api
+    container_name: chruch_container
     restart: always
     command: python manage.py runserver 0.0.0.0:8000
     volumes:

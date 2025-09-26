@@ -16,7 +16,6 @@ venv/
 .venv/
 
 # Docker
-Dockerfile
 docker-compose.yml
 
 # System files
