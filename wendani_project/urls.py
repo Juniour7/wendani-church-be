@@ -1,46 +1,10 @@
-"""
-URL configuration for wendani_project project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers
-from church_app import views
 
-# Blog App
-from blog_app.views import BlogAPIView, AuthorAPIView
+# Church App
 
-
-# Custom Admin
-from accounts.views import UserViewSet
-
-# Set up the routers
-router = routers.DefaultRouter()
-router.register(r'prayer', views.PrayerFormAPIView)
-router.register(r'baptism', views.BaptismFormAPIView)
-router.register(r'dedication', views.DedicationFormAPIView)
-router.register(r'membership', views.MembershipFormAPIView)
-router.register(r'benevolence', views.BenevolenceFormAPIView)
-router.register(r'contact', views.ContactFormAPIView)
-router.register(r'announcements', views.AnnouncementsAPIView)
-router.register(r'events', views.EventsAPIView)
-router.register(r'blog', BlogAPIView)
-router.register(r'author', AuthorAPIView)
-router.register(r'users', UserViewSet)
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-]
+    path('admin/', admin.site.urls),
+    path('form/', include('church_app.urls')), # form api endpoints
+]   

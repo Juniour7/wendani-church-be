@@ -1,43 +1,29 @@
-from django.shortcuts import render
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFormSerializer, MemberFormSerializer, EventsSerializer, BenevolenceFormSerializer, ContactFormSerializer, AnnouncementsSerializer 
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements
-
-# Create your views here.
-class PrayerFormAPIView(viewsets.ModelViewSet):
-    queryset = PrayerRequestForm.objects.all()
-    serializer_class = PrayerFormSerializer
-
-class BaptismFormAPIView(viewsets.ModelViewSet):
-    queryset = BaptismRequestForm.objects.all()
-    serializer_class = BaptismFormSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .serializers import PrayerFormSerializer
 
 
-class DedicationFormAPIView(viewsets.ModelViewSet):
-    queryset = DedicationForm.objects.all()
-    serializer_class = DedicationFormSerializer
+# Views
+@api_view(['POST', 'GET'])
+@permission_classes([AllowAny])
+def prayer_form_view(request):
+    """
+    POST: Handle submision of prayer request form
+    """
+    if request.method == 'POST':
+        serializer = PrayerFormSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
-class MembershipFormAPIView(viewsets.ModelViewSet):
-    queryset = MembershipTransferForm.objects.all()
-    serializer_class = MemberFormSerializer
-
-class BenevolenceFormAPIView(viewsets.ModelViewSet):
-    queryset = BenevolenceForm.objects.all()
-    serializer_class = BenevolenceFormSerializer
-
-class ContactFormAPIView(viewsets.ModelViewSet):
-    queryset = ContactForm.objects.all()
-    serializer_class = ContactFormSerializer
-
-class AnnouncementsAPIView(viewsets.ModelViewSet):
-    queryset = Announcements.objects.all()
-    serializer_class = AnnouncementsSerializer
-
-
-class EventsAPIView(viewsets.ModelViewSet):
-    queryset = Events.objects.all()
-    serializer_class = EventsSerializer
-    permission_classes = [IsAuthenticated]
-
-
+    elif request.method == 'GET':
+        if not request.user.is_authenticated:
+            return Response({"error" : "Be an admin to view prayer requests"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        prayers = PrayerFormSerializer.objects.all().order_by('-created_at')
+        serializer = PrayerFormSerializer(prayers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
