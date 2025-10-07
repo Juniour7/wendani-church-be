@@ -174,11 +174,11 @@ class BenevolenceForm(models.Model):
 
 class ContactForm(models.Model):
     full_name = models.CharField(max_length=200)
-    email = models.EmailField(blank=True, null=True)
-    phone_number = models.IntegerField()
+    email = models.EmailField(blank=True)
+    phone_number = models.IntegerField(blank=True, null=True)
     subject = models.CharField(max_length=100)
     message = models.TextField()
-    created_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['created_at']

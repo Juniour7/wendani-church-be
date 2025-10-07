@@ -84,3 +84,18 @@ class MembershipSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class ContactFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactForm
+        fields = [
+            'id',
+            'full_name',
+            'email',
+            'phone_number',
+            'subject',
+            'message',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']

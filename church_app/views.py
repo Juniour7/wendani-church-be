@@ -3,8 +3,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm
+from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm
 
 
 # ---------- PRAYER REQUESTS ----------
@@ -94,3 +94,25 @@ def membership_form_view(request):
         members = MembershipTransferForm.objects.all().order_by('-created_at')
         serializer = MembershipSerializer(members, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- MEMEBERSHIP TRANSFER REQUESTS ----------
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_form_submit(request):
+    """Submitting Contact Form"""
+    serializer = ContactFormSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes(['GET'])
+def contact_form_view(request):
+    """List Contacts as Admin"""
+    contacts = ContactForm.objects.all().order_by('-created_at')
+    serializer = ContactFormSerializer(contacts, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

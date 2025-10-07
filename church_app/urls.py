@@ -18,4 +18,8 @@ urlpatterns = [
     # Memebership transfer endpoints
     path('membership/', views.membership_submit_view, name='membership-form-submit'),
     path('membership/list/', views.membership_form_view, name='membership-form-lidt'),
+
+    # Contact Form Submission
+    path('contact/', views.contact_form_submit, name='contact-form-submit'),
+    path('contact/list/', views.contact_form_view, name='contact-form-list'),
 ]
