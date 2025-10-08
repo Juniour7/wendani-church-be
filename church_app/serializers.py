@@ -99,3 +99,20 @@ class ContactFormSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class EventsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Events
+        fields = [
+            'id',
+            'title',
+            'date',
+            'venue',
+            'description',
+            'time',
+            'department',
+            'image',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']

@@ -3,8 +3,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm
+from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events
 
 
 # ---------- PRAYER REQUESTS ----------
@@ -116,3 +116,81 @@ def contact_form_view(request):
     contacts = ContactForm.objects.all().order_by('-created_at')
     serializer = ContactFormSerializer(contacts, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- EVENTS ENDPOINTS ----------
+
+@api_view(['POST', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def events_submit(request):
+    """
+    POST: Create new events
+    PUT: Update current events
+    DELETE: Delete events 
+    """
+    # ------POST------
+    if request.method == 'POST':
+        serializer = EventsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    # -------UPDATE-----
+    elif request.method == 'PUT':
+        event_id = request.data.get('id') or request.data.get('pk')
+        if not event_id:
+            return Response({"detail" : "Event ID is required to update."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            event = Events.objects.get(pk=event_id)
+        except Events.DoesNotExist:
+            return Response({"detail" : "Event Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = EventsSerializer(event, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    # ------DELETE-------
+    elif request.method == 'DELTE':
+        event_id = request.data('id') or request.data.get('pk')
+
+        if not event_id:
+            return Response({"detail" : "Event ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            events = Events.objects.get(pk=event_id)
+        except Events.DoesNotExist:
+            return Response({"detail" : "Events not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        event.delete()
+        return Response({"detail" : "Event deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def events_list_view(request,pk=None):
+    """
+    GET:
+    - If `pk` is provided → Retrieve a single event
+    - If `pk` is not provided → Retrieve all events
+    """
+    if request.method == 'GET':
+        if pk: # detail view
+            try:
+                event = Events.objects.get(pk=pk)
+            except Events.DoesNotExist:
+                return Response({"detail" : "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = EventsSerializer(event)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        else: #list view
+            events = Events.objects.all().order_by('date')
+            serializer = EventsSerializer(events, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+

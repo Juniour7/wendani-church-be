@@ -22,4 +22,9 @@ urlpatterns = [
     # Contact Form Submission
     path('contact/', views.contact_form_submit, name='contact-form-submit'),
     path('contact/list/', views.contact_form_view, name='contact-form-list'),
+
+    # Events Handling endpoints
+    path('events/', views.events_submit, name='events-create'),
+    path('events/list/', views.events_list_view, name='events-list'), # Events list view
+    path('events/<int:pk>/', views.events_list_view, name='events-ddetail') # Events detail view
 ]
