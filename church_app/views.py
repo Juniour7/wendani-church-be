@@ -110,7 +110,7 @@ def contact_form_submit(request):
 
 
 @api_view(['GET'])
-@permission_classes(['GET'])
+@permission_classes([IsAuthenticated])
 def contact_form_view(request):
     """List Contacts as Admin"""
     contacts = ContactForm.objects.all().order_by('-created_at')
@@ -215,8 +215,8 @@ def events_submit(request):
     
 
     # ------DELETE-------
-    elif request.method == 'DELTE':
-        event_id = request.data('id') or request.data.get('pk')
+    elif request.method == 'DELETE':
+        event_id = request.data.get('id') or request.data.get('pk')
 
         if not event_id:
             return Response({"detail" : "Event ID is required"}, status=status.HTTP_400_BAD_REQUEST)
