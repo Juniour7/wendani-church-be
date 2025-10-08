@@ -3,8 +3,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer, AnnouncementsSerializer
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events, Announcements
+from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer, AnnouncementsSerializer, BenevolenceSerializer
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events, Announcements, BenevolenceForm
 
 
 # ---------- PRAYER REQUESTS ----------
@@ -118,7 +118,66 @@ def contact_form_view(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# ---------- BENEVOLENCE REQUESTS ENDPOINTS ----------
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def benevolence_submit_view(request):
+    """
+    Anyone can place a benevolence registration
+    """
+    if request.method == 'POST':
+        serializer = BenevolenceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def benevolence_list_view(request):
+    """
+    GET:
+    - Authenticated users can:
+      • View all benevolence forms
+      • Update the status of a specific form using query params (?id=<id>&status=<new_status>)
+    """
+    form_id = request.query_params.get('id')
+    new_status = request.query_params.get('status')
+
+    # If admin/staff wants to change status
+    if form_id and new_status:
+        valid_statuses = [choice[0] for choice in BenevolenceForm.REGISTRATION_STATUS]
+
+        if new_status not in valid_statuses:
+            return Response(
+                {"detail": f"Invalid status value. Must be one of: {valid_statuses}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            form = BenevolenceForm.objects.get(pk=form_id)
+        except BenevolenceForm.DoesNotExist:
+            return Response(
+                {"detail": "Form not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        form.status = new_status
+        form.save()
+
+        serializer = BenevolenceSerializer(form)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # Otherwise, just list all
+    forms = BenevolenceForm.objects.all().order_by('-created_at')
+    serializer = BenevolenceSerializer(forms, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # ---------- EVENTS HANDLING ENDPOINTS ----------
+
 
 @api_view(['POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -245,7 +304,7 @@ def announcements_submit(request):
         file.delete()
         return Response({"detail" : "File deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
     
-    
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def announcements_list_view(request):

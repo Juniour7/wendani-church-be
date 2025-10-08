@@ -23,6 +23,10 @@ urlpatterns = [
     path('contact/', views.contact_form_submit, name='contact-form-submit'),
     path('contact/list/', views.contact_form_view, name='contact-form-list'),
 
+    # Benevolence form handling endpoints
+    path('benevolence/', views.benevolence_list_view, name='benevolence-list'),
+    path('benevolence/submit/', views.benevolence_submit_view, name='benevolence-submit'),
+
     # Events Handling endpoints
     path('events/', views.events_submit, name='events-create'), # update, post and delete
     path('events/list/', views.events_list_view, name='events-list'), # Events list view
@@ -30,5 +34,5 @@ urlpatterns = [
 
     # Announcement File ENDPOINTS
     path('announcements/', views.announcements_submit, name='annoucemnets-create'),
-    path('annoncements/list/', views.announcements_list_view, name='announcements-list')
+    path('annoucements/list/', views.announcements_list_view, name='announcements-list'),
 ]

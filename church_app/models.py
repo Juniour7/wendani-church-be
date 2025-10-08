@@ -152,25 +152,40 @@ class Events(models.Model):
 
 class BenevolenceForm(models.Model):
     """Bennevolence Table to Habdle Benevolence Registrations"""
-    MEMBERSHIP_STATUS = [
-        ('Visitor', 'Visitor'),
-        ('Registerd Member', 'Registerd Member'),
-        ('Sabbath School Member', 'Sabbath School Member'),
+    REGISTRATION_STATUS = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('denied', 'Denied'),
     ]
+
+    MEMBERSHIP_STATUS = [
+        ('visitor', 'Visitor'),
+        ('church_member', 'Church Member'),
+        ('sabbath_school_member', 'Sabbath School Member'),
+    ]
+
     head_full_name = models.CharField(max_length=200)
-    head_phone_number = models.IntegerField()
+    head_phone_number = models.CharField(max_length=15)
     email = models.EmailField()
     membership_status = models.CharField(max_length=200, choices=MEMBERSHIP_STATUS)
-    spuse_name = models.CharField(max_length=200)
-    church_name = models.CharField(max_length=200)
-    dependents_name = models.CharField(max_length=200)
-    dependents_number = models.IntegerField()
-    dependents_relationship = models.CharField(max_length=200)
-    additional = models.TextField()
+    spouse_name = models.CharField(max_length=200, blank=True)
+    church_name = models.CharField(max_length=200, blank=True)
+    additional = models.TextField(blank=True)
+    status = models.CharField(max_length=150, choices=REGISTRATION_STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.head_full_name
+
+class Dependents(models.Model):
+    """Each Benevolence Form can have multiple dependents"""
+    benevolence_form = models.ForeignKey(BenevolenceForm, on_delete=models.CASCADE, related_name='dependents')
+    name = models.CharField(max_length=200)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    relationship = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.relationship})"
 
 
 class ContactForm(models.Model):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, Events, BenevolenceForm, ContactForm, Announcements, Dependents
 
 # Serializer classes for forms
 class PrayerFormSerializer(serializers.ModelSerializer):
@@ -101,6 +101,63 @@ class ContactFormSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+class DependentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dependents
+        fields = [
+            'id',
+            'name',
+            'phone_number',
+            'relationship',
+        ]
+        read_only_fields = ['id']
+
+
+class BenevolenceSerializer(serializers.ModelSerializer):
+    dependents = DependentsSerializer(many=True, required=False)
+
+    class Meta:
+        model = BenevolenceForm
+        fields = [
+            'id',
+            'head_full_name',
+            'head_phone_number',
+            'email',
+            'membership_status',
+            'spouse_name',
+            'church_name',
+            'additional',
+            'status',
+            'created_at',
+            'dependents'
+        ]
+
+    def create(self, validated_data):
+        dependents_data = validated_data.pop('dependents', [])
+        form = BenevolenceForm.objects.create(**validated_data)
+
+        for dependent in dependents_data:
+            Dependents.objects.create(benevolence_form=form, **dependent)
+
+        return form
+
+    def update(self, instance, validated_data):
+        dependents_data = validated_data.pop('dependents', None)
+
+        # update main BenevolenceForm fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # optionally update dependents if provided
+        if dependents_data is not None:
+            instance.dependents.all().delete()
+            for dependent in dependents_data:
+                Dependents.objects.create(benevolence_form=instance, **dependent)
+
+        return instance
+
+
 class EventsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Events
@@ -116,7 +173,7 @@ class EventsSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
-        
+
 
 class AnnouncementsSerializer(serializers.ModelSerializer):
     size = serializers.IntegerField(read_only=True)
