@@ -24,7 +24,11 @@ urlpatterns = [
     path('contact/list/', views.contact_form_view, name='contact-form-list'),
 
     # Events Handling endpoints
-    path('events/', views.events_submit, name='events-create'),
+    path('events/', views.events_submit, name='events-create'), # update, post and delete
     path('events/list/', views.events_list_view, name='events-list'), # Events list view
-    path('events/<int:pk>/', views.events_list_view, name='events-ddetail') # Events detail view
+    path('events/<int:pk>/', views.events_list_view, name='events-ddetail'), # Events detail view
+
+    # Announcement File ENDPOINTS
+    path('announcements/', views.announcements_submit, name='annoucemnets-create'),
+    path('annoncements/list/', views.announcements_list_view, name='announcements-list')
 ]

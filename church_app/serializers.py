@@ -116,3 +116,44 @@ class EventsSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+        
+
+class AnnouncementsSerializer(serializers.ModelSerializer):
+    size = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Announcements
+        fields = [
+            'id',
+            'title',
+            'description',
+            'size',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'size', 'created_at']
+
+    
+    def validate_file(self, value):
+        """
+        Validate that:
+        - The uploaded file is a PDF.
+        - The file size does not exceed 5 MB.
+        """
+        import os
+
+        # ✅ Check file extension
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext != '.pdf':
+            raise serializers.ValidationError("Only PDF files are allowed.")
+
+        # ✅ Check file content type (extra safety)
+        if hasattr(value, 'content_type'):
+            if value.content_type not in ['application/pdf']:
+                raise serializers.ValidationError("Invalid file type. Only PDF files are accepted.")
+
+        # ✅ Check file size limit
+        max_size = 5 * 1024 * 1024  # 5 MB
+        if value.size > max_size:
+            raise serializers.ValidationError("File size must not exceed 5 MB.")
+
+        return value

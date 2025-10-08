@@ -3,8 +3,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events
+from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer, AnnouncementsSerializer
+from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events, Announcements
 
 
 # ---------- PRAYER REQUESTS ----------
@@ -118,7 +118,7 @@ def contact_form_view(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ---------- EVENTS ENDPOINTS ----------
+# ---------- EVENTS HANDLING ENDPOINTS ----------
 
 @api_view(['POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -167,7 +167,7 @@ def events_submit(request):
         except Events.DoesNotExist:
             return Response({"detail" : "Events not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        event.delete()
+        events.delete()
         return Response({"detail" : "Event deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
         
 
@@ -194,3 +194,65 @@ def events_list_view(request,pk=None):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# ---------- ANNOUNCEMENTS HANDLING ENDPOINTS ----------
+
+@api_view(['POST', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def announcements_submit(request):
+    """
+    POST: Create new announcements files
+    PUT: Update current announcements
+    DELETE: Delete announcements
+    """
+    # -------POST--------
+    if request.method == 'POST':
+        serializer = AnnouncementsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # ------UODATE--------
+    elif request.method == 'PUT':
+        file_id = request.data.get('id') or request.data.get('pk')
+
+        if not file_id:
+            return Response({"detail" : "Announcements Id Required To update"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            file = Announcements.objects.get(pk=file_id)
+        except Announcements.DoesNotExist:
+            return Response({"detail" : "File does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = AnnouncementsSerializer(file, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # -------DELETE------
+    elif request.method == 'DELETE':
+        file_id = request.data.get('id') or request.data.get('pk')
+
+        if not file_id:
+            return Response({"detail" : "You need file id to delete a file"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            file = Announcements.objects.get(pk=file_id)
+        except Announcements.DoesNotExist:
+            return Response({"error" : "File does not exists"}, status=status.HTTP_404_NOT_FOUND)
+        
+        file.delete()
+        return Response({"detail" : "File deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def announcements_list_view(request):
+    """
+    GET: View a list of file uploads
+    """
+    if request.method == 'GET':
+        files = Announcements.objects.all().order_by('-created_at')
+        serializer = AnnouncementsSerializer(files, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

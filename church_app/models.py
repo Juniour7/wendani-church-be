@@ -149,6 +149,7 @@ class Events(models.Model):
     def __str__(self):
         return self.title
 
+
 class BenevolenceForm(models.Model):
     """Bennevolence Table to Habdle Benevolence Registrations"""
     MEMBERSHIP_STATUS = [
@@ -194,9 +195,13 @@ class Announcements(models.Model):
     )
     description = models.TextField()
     title = models.CharField(max_length=200)
-    uploaded_date = models.DateField()
-    size = models.CharField(max_length=20)
+    size = models.PositiveIntegerField(editable=False, null=True)
     created_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.size:
+            self.size = self.file.size  # get size in bytes
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['created_at']
