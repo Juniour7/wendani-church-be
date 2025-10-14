@@ -4,8 +4,16 @@ from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, Membe
 # Serializer classes for forms
 class PrayerFormSerializer(serializers.ModelSerializer):
     """Prayer Form"""
-    class Meta:
+    # Not required fields
+    full_name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.IntegerField(required=False, allow_null=True)
 
+    # Required fields
+    prayer_type = serializers.ChoiceField(choices=PrayerRequestForm.REQUEST_TYPE, default='personal request')
+    prayer_request = serializers.CharField(required=True)
+
+    class Meta:
         model = PrayerRequestForm
         fields = [
             'id',
@@ -18,6 +26,14 @@ class PrayerFormSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+    
+    def to_representation(self, instance):
+        """Ensure no null values are sent to frontend."""
+        data = super().to_representation(instance)
+        for key, value in data.items():
+            if value is None:
+                data[key] = ""
+        return data
 
 
 class BaptismFormSerializer(serializers.ModelSerializer):

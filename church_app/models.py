@@ -28,7 +28,7 @@ class PrayerRequestForm(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return self.full_name
+        return self.full_name or f"Prayer Request #{self.id}"
     
 
 
