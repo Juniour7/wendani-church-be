@@ -4,6 +4,10 @@ from .validators import validate_file_extension, valdate_file_size
 # Models
 class PrayerRequestForm(models.Model):
     """Prayer Request Form to store Prayer requests"""
+    ACTION = [
+        ('read', 'Read' ),
+        ('unread', 'Unread' ),
+    ]
     REQUEST_TYPE = [
         ('personal request', 'personal request' ),
         ('family request', 'family request' ),
@@ -17,6 +21,7 @@ class PrayerRequestForm(models.Model):
     phone_number = models.IntegerField(blank=True, null=True) #optional
     prayer_type = models.CharField(max_length=200, choices=REQUEST_TYPE, default='personal request')
     prayer_request = models.TextField()
+    status = models.CharField(max_length=150, choices=ACTION, default='unread')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -29,6 +34,10 @@ class PrayerRequestForm(models.Model):
 
 class BaptismRequestForm(models.Model):
     """Baptismal Table to store Baptismal Requests"""
+    ACTION = [
+        ('read', 'Read' ),
+        ('unread', 'Unread' ),
+    ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField(blank=True) #optional
     phone_number = models.IntegerField()
@@ -37,6 +46,7 @@ class BaptismRequestForm(models.Model):
     is_study = models.BooleanField(default=False)
     additional_information = models.TextField(blank=True) #optional
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=150, choices=ACTION, default='unread')
 
     class Meta:
         ordering = ['created_at']
@@ -52,6 +62,11 @@ class DedicationForm(models.Model):
         ('male', 'Male'),
         ('female', 'Female')
     ]
+    ACTION = [
+        ('read', 'Read' ),
+        ('unread', 'Unread' ),
+        ('completed', 'Completed' ),
+    ]
     child_full_name = models.CharField(max_length=200)
     date_birth = models.DateField()
     gender = models.CharField(max_length=20, choices=GENDER_CHOICE, default='male')
@@ -63,6 +78,7 @@ class DedicationForm(models.Model):
     mother_phone_number = models.IntegerField()
     additional_information = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=150, choices=ACTION, default='unread')
 
     class Meta:
         ordering = ['created_at']
@@ -74,9 +90,9 @@ class DedicationForm(models.Model):
 class MembershipTransferForm(models.Model):
     """Membership Tranfer Table to Handle Membership Transfers"""
     PROCESS_STATUS = [
-        ("Pending" , "Pending"),
-        ("Completed" , "completed"),
-        ("Failed" , "failed"),
+        ("pending" , "Pending"),
+        ("completed" , "completed"),
+        ("failed" , "Failed"),
     ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField()
@@ -189,11 +205,17 @@ class Dependents(models.Model):
 
 
 class ContactForm(models.Model):
+    """Contact Form to handle messages from users"""
+    ACTION = [
+        ('contacted', 'Contacted' ),
+        ('unread', 'Unread' ),
+    ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField(blank=True)
     phone_number = models.IntegerField(blank=True, null=True)
     subject = models.CharField(max_length=100)
     message = models.TextField()
+    status = models.CharField(max_length=150, choices=ACTION, default='unread')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

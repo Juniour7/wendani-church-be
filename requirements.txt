@@ -2,7 +2,9 @@ asgiref==3.9.1
 certifi==2025.8.3
 distlib==0.4.0
 Django==5.2.5
+django-cors-headers==4.9.0
 djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
 dotenv==0.9.9
 filelock==3.19.1
 mysqlclient==2.2.7
@@ -11,6 +13,7 @@ pillow==11.3.0
 pipenv==2025.0.4
 platformdirs==4.4.0
 Pygments==2.19.2
+PyJWT==2.10.1
 python-dotenv==1.1.1
 setuptools==80.9.0
 sqlparse==0.5.3

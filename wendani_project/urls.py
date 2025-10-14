@@ -7,4 +7,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('form/', include('church_app.urls')), # form api endpoints
+    path('api/', include('accounts.urls')),
 ]   

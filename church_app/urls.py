@@ -6,10 +6,14 @@ urlpatterns = [
     # Prayer endpoints
     path('prayers/', views.prayer_form_submit_view, name='prayer_form_submit'),
     path('prayers/list/', views.prayer_form_list_view, name='prayer_form_list'),
+    path('prayers/<int:pk>/', views.prayer_form_detail_view, name='prayer_form_detail'),
+    path('prayers/<int:pk>/update/', views.update_prayer_status_view, name='prayer_form_update'),
 
     # Baptism endpoints
     path('baptisms/', views.baptism_form_submit_view, name='baptism_form_submit'),
     path('baptisms/list/', views.baptism_form_list_view, name='baptism_form_list'),
+    path('baptisms/<int:pk>/', views.baptism_form_detail_view, name='baptism_form_detail'),
+    path('baptisms/<int:pk>/update/', views.update_baptism_status_view, name='baptism_form_update'),
 
     # Dedication endpoints
     path('dedications/', views.dedication_form_submit_view, name='dedication_form_submit'),

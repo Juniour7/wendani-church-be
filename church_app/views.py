@@ -24,9 +24,46 @@ def prayer_form_submit_view(request):
 @permission_classes([IsAuthenticated])
 def prayer_form_list_view(request):
     """Authenticated users (or admins) can view all prayer requests."""
-    prayers = PrayerRequestForm.objects.all().order_by('-created_at')
-    serializer = PrayerFormSerializer(prayers, many=True)
+    if request.method == 'GET':
+        prayers = PrayerRequestForm.objects.all().order_by('-created_at')
+        serializer = PrayerFormSerializer(prayers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def prayer_form_detail_view(request, pk):
+    """Retrieve a specific prayer request by its ID."""
+    try:
+        prayer = PrayerRequestForm.objects.get(pk=pk)
+    except PrayerRequestForm.DoesNotExist:
+        return Response({"detail": "Prayer request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = PrayerFormSerializer(prayer)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_prayer_status_view(request, pk):
+    """Update the status of a specific prayer request."""
+    try:
+        prayer = PrayerRequestForm.objects.get(pk=pk)
+    except PrayerRequestForm.DoesNotExist:
+        return Response({"detail": "Prayer request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status not in dict(PrayerRequestForm.ACTION).keys():
+        return Response(
+            {"detail": f"Invalid status value. Must be one of: {list(dict(PrayerRequestForm.ACTION).keys())}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    prayer.status = new_status
+    prayer.save()
+
+    serializer = PrayerFormSerializer(prayer)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 # ---------- BAPTISM REQUESTS ----------
@@ -46,9 +83,46 @@ def baptism_form_submit_view(request):
 @permission_classes([IsAuthenticated])
 def baptism_form_list_view(request):
     """Authenticated users (or admins) can view baptism requests."""
+    
+    # Filtering
     baptism_requests = BaptismRequestForm.objects.all().order_by('-created_at')
     serializer = BaptismFormSerializer(baptism_requests, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def baptism_form_detail_view(request, pk):
+    """Retrieve a specific baptism request by its ID."""
+    try:
+        baptism_request = BaptismRequestForm.objects.get(pk=pk)
+    except BaptismRequestForm.DoesNotExist:
+        return Response({"detail": "Baptism request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = BaptismFormSerializer(baptism_request)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_baptism_status_view(request, pk):
+    """Update the status of a specific baptism request."""
+    try:
+        baptism_request = BaptismRequestForm.objects.get(pk=pk)
+    except BaptismRequestForm.DoesNotExist:
+        return Response({"detail": "Baptism request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status not in dict(BaptismRequestForm.ACTION).keys():
+        return Response(
+            {"detail": f"Invalid status value. Must be one of: {list(dict(BaptismRequestForm.ACTION).keys())}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    baptism_request.status = new_status
+    baptism_request.save()
+
+    serializer = BaptismFormSerializer(baptism_request)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 # ---------- DEDICATION REQUESTS ----------
@@ -271,7 +345,7 @@ def announcements_submit(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # ------UODATE--------
+    # ------UPDATE--------
     elif request.method == 'PUT':
         file_id = request.data.get('id') or request.data.get('pk')
 

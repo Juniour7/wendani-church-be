@@ -14,6 +14,7 @@ class PrayerFormSerializer(serializers.ModelSerializer):
             'phone_number',
             'prayer_type',
             'prayer_request',
+            'status',
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']
@@ -31,6 +32,7 @@ class BaptismFormSerializer(serializers.ModelSerializer):
             'date_of_birth',
             'is_baptised',
             'is_study',
+            'status',
             'additional_information',
             'created_at',
         ]
@@ -53,6 +55,7 @@ class DedicationFromSerializer(serializers.ModelSerializer):
             'mother_email',
             'mother_phone_number',
             'additional_information',
+            'status',
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']

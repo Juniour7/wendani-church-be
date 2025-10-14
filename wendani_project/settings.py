@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'blog_app',
     'library_app',
     'rest_framework',
+    'rest_framework_simplejwt',
     'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -146,9 +147,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # use token auth by default (you can override per-view)
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ],
+     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
