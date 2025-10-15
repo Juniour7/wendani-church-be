@@ -22,6 +22,9 @@ ALLOWED_HOSTS = [
     "wendani-church-be.onrender.com",  # <-- remove 'https://'
 ]
 
+AUTH_USER_MODEL = 'accounts.UserProfile'
+
+
 # -------------------------------------------------------------------
 # APPLICATIONS
 # -------------------------------------------------------------------
