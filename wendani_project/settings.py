@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
-import dj_database_url  # ← ADD THIS
 
 load_dotenv()
 
@@ -13,14 +12,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -------------------------------------------------------------------
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # <- change from DJANGO_SECURITY_KEY to SECRET_KEY
-
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "wendani-church-be.onrender.com",  # <-- remove 'https://'
-]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 AUTH_USER_MODEL = 'accounts.UserProfile'
 
@@ -70,11 +63,15 @@ ROOT_URLCONF = 'wendani_project.urls'
 
 # Render provides DATABASE_URL in the environment
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',  # fallback for local dev
-        conn_max_age=600,
-        ssl_require=True  # required by Render Postgres
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv("PA_DB_NAME"),
+        'USER': os.getenv("PA_DB_USER"),
+        'PASSWORD': os.getenv("PA_DB_PASSWORD"),
+        'HOST': os.getenv("PA_DB_HOST"),
+        'PORT': os.getenv("PA_DB_PORT", "3306"),
+        # Optional: 'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+    }
 }
 
 # DATABASES = { 'default': { 'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3', } }
@@ -84,11 +81,10 @@ DATABASES = {
 # -------------------------------------------------------------------
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')   # collectstatic target
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 TEMPLATES = [
     {
