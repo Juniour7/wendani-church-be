@@ -1,150 +1,101 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.viewsets import ModelViewSet
 
-from .serializers import PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer, MembershipSerializer, ContactFormSerializer, EventsSerializer, AnnouncementsSerializer, BenevolenceSerializer
-from .models import PrayerRequestForm, BaptismRequestForm, DedicationForm, MembershipTransferForm, ContactForm, Events, Announcements, BenevolenceForm
+
+
+from .serializers import (
+    PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer,
+    MembershipSerializer, ContactFormSerializer, EventsSerializer,
+    AnnouncementsSerializer, BenevolenceSerializer
+)
+
+from .models import (
+    PrayerRequestForm, BaptismRequestForm, DedicationForm,
+    MembershipTransferForm, ContactForm, Events, Announcements,
+    BenevolenceForm
+)
+
+
+# =============================
+# Base Permission Behavior
+# =============================
+
+class PublicSubmitView(ModelViewSet):
+    """
+    Allows ANYONE to create/submit forms,
+    but restricts all other actions to authenticated users.
+    """
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
 
 
 # ---------- PRAYER REQUESTS ----------
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def prayer_form_submit_view(request):
-    """Anyone can submit a prayer request."""
-    serializer = PrayerFormSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class PrayerRequestViewSet(PublicSubmitView):
+    """
+    Handle Form submission
+    """
+    queryset = PrayerRequestForm.objects.all().order_by('-created_at')
+    serializer_class = PrayerFormSerializer
 
+    @action(detail='True', methods=['PATCH'], permission_classes=[IsAuthenticated])
+    def update_status(self, request, pk=None):
+        prayer = self.get_object()
+        new_status = request.data.get('status')
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def prayer_form_list_view(request):
-    """Authenticated users (or admins) can view all prayer requests."""
-    if request.method == 'GET':
-        prayers = PrayerRequestForm.objects.all().order_by('-created_at')
-        serializer = PrayerFormSerializer(prayers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def prayer_form_detail_view(request, pk):
-    """Retrieve a specific prayer request by its ID."""
-    try:
-        prayer = PrayerRequestForm.objects.get(pk=pk)
-    except PrayerRequestForm.DoesNotExist:
-        return Response({"detail": "Prayer request not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = PrayerFormSerializer(prayer)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_prayer_status_view(request, pk):
-    """Update the status of a specific prayer request."""
-    try:
-        prayer = PrayerRequestForm.objects.get(pk=pk)
-    except PrayerRequestForm.DoesNotExist:
-        return Response({"detail": "Prayer request not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    new_status = request.data.get('status')
-    if new_status not in dict(PrayerRequestForm.ACTION).keys():
-        return Response(
-            {"detail": f"Invalid status value. Must be one of: {list(dict(PrayerRequestForm.ACTION).keys())}"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    prayer.status = new_status
-    prayer.save()
-
-    serializer = PrayerFormSerializer(prayer)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+        if new_status not in dict(PrayerRequestForm.ACTION):
+            return Response({"detail" : "Invalid Status"}, status=400)
+        
+        prayer.status = new_status
+        prayer.save()
+        return Response(self.get_serializer(prayer).data)
 
 
 
 # ---------- BAPTISM REQUESTS ----------
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def baptism_form_submit_view(request):
-    """Anyone can submit a baptism request."""
-    serializer = BaptismFormSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class BaptismRequestViewSet(PublicSubmitView):
+    queryset = BaptismRequestForm.objects.all().order_by('-created_at')
+    serializer_class = BaptismFormSerializer
 
+    @action(detail=True, methods=['PATCH'], permission_classes=[IsAuthenticated])
+    def status_update(self, request, pk=None):
+        baptism = self.get_object()
+        new_status = request.data.get('status')
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def baptism_form_list_view(request):
-    """Authenticated users (or admins) can view baptism requests."""
-    
-    # Filtering
-    baptism_requests = BaptismRequestForm.objects.all().order_by('-created_at')
-    serializer = BaptismFormSerializer(baptism_requests, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def baptism_form_detail_view(request, pk):
-    """Retrieve a specific baptism request by its ID."""
-    try:
-        baptism_request = BaptismRequestForm.objects.get(pk=pk)
-    except BaptismRequestForm.DoesNotExist:
-        return Response({"detail": "Baptism request not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = BaptismFormSerializer(baptism_request)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_baptism_status_view(request, pk):
-    """Update the status of a specific baptism request."""
-    try:
-        baptism_request = BaptismRequestForm.objects.get(pk=pk)
-    except BaptismRequestForm.DoesNotExist:
-        return Response({"detail": "Baptism request not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    new_status = request.data.get('status')
-    if new_status not in dict(BaptismRequestForm.ACTION).keys():
-        return Response(
-            {"detail": f"Invalid status value. Must be one of: {list(dict(BaptismRequestForm.ACTION).keys())}"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    baptism_request.status = new_status
-    baptism_request.save()
-
-    serializer = BaptismFormSerializer(baptism_request)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+        if new_status not in dict(BaptismRequestForm.ACTION):
+            return Response({"detail" : "Invalid Staus"})
+        
+        baptism.status = new_status
+        baptism.save()
+        return Response(self.get_serializer(baptism).data)
 
 
 
 # ---------- DEDICATION REQUESTS ----------
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def dedication_form_submit_view(request):
-    """Anyone can submit a dedication form."""
-    serializer = DedicationFromSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class DedicationViewSet(PublicSubmitView):
+    queryset = DedicationForm.objects.all().order_by('-created_at')
+    serializer_class = DedicationFromSerializer
 
+    @action(detail=True, methods=['PATCH'], permission_classes=[IsAuthenticated])
+    def status_update(self, request, pk=None):
+        dedication = self.get_object()
+        new_status = request.data.get('status')
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def dedication_form_list_view(request):
-    """Authenticated users (or admins) can view dedication forms."""
-    dedications = DedicationForm.objects.all().order_by('-created_at')
-    serializer = DedicationFromSerializer(dedications, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+        if new_status not in dict(DedicationForm.ACTION):
+            return Response({"detail" : "Invalid Status"})
+        
+        dedication.status = new_status
+        deication.save()
+        return Response(self.get_serializer(dedication).data)
 
 
 # ---------- MEMEBERSHIP TRANSFER REQUESTS ----------
