@@ -32,5 +32,5 @@ urlpatterns = [
 
     # Announcement File ENDPOINTS
     path('announcements/', views.AnnouncementsListCreateView.as_view(), name='annoucemnets-create'),
-    path('annoucements/<int:pk>/', views.AnnouncementsDetailView.as_view(), name='announcements-detail'),
+    path('announcements/<int:pk>/', views.AnnouncementsDetailView.as_view(), name='announcements-detail'),
 ]
