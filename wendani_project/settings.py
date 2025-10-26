@@ -70,7 +70,6 @@ DATABASES = {
         'PASSWORD': os.getenv("PA_DB_PASSWORD"),
         'HOST': os.getenv("PA_DB_HOST"),
         'PORT': os.getenv("PA_DB_PORT", "3306"),
-        # Optional: 'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
     }
 }
 
