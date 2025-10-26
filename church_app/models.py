@@ -18,7 +18,7 @@ class PrayerRequestForm(models.Model):
     ]
     full_name = models.CharField(max_length=200, blank=True, null=True) #optional
     email = models.EmailField(blank=True, null=True) #optional
-    phone_number = models.IntegerField(blank=True, null=True) #optional
+    phone_number = models.CharField(max_length=15, blank=True, null=True) #optional
     prayer_type = models.CharField(max_length=200, choices=REQUEST_TYPE, default='personal request')
     prayer_request = models.TextField()
     status = models.CharField(max_length=150, choices=ACTION, default='unread')
@@ -40,7 +40,7 @@ class BaptismRequestForm(models.Model):
     ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField(blank=True) #optional
-    phone_number = models.IntegerField()
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     date_of_birth = models.DateField()
     is_baptised = models.BooleanField(default=False)
     is_study = models.BooleanField(default=False)
@@ -72,10 +72,10 @@ class DedicationForm(models.Model):
     gender = models.CharField(max_length=20, choices=GENDER_CHOICE, default='male')
     father_full_name = models.CharField(max_length=200)
     father_email = models.EmailField(blank=True)
-    father_phone_number = models.IntegerField()
+    father_phone_number = models.CharField(max_length=15)
     mother_full_name = models.CharField(max_length=200)
     mother_email = models.EmailField(blank=True)
-    mother_phone_number = models.IntegerField()
+    mother_phone_number = models.CharField(max_length=15)
     additional_information = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=150, choices=ACTION, default='unread')
@@ -96,7 +96,7 @@ class MembershipTransferForm(models.Model):
     ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField()
-    phone_number = models.IntegerField() 
+    phone_number = models.CharField(max_length=15) 
     date_of_birth = models.DateField()
     physical_address = models.CharField(max_length=100, blank=True)
     from_church_name = models.CharField(max_length=200)
@@ -108,10 +108,10 @@ class MembershipTransferForm(models.Model):
     to_conference_name = models.CharField(max_length=200)
     to_address = models.CharField(max_length=200)
     additional_notes = models.TextField(blank=True)
-    board_minute_number = models.IntegerField()
+    board_minute_number = models.CharField(max_length=100)
     first_reading_date = models.DateField()
     second_reading_date = models.DateField()
-    business_number = models.IntegerField()
+    business_number = models.CharField(max_length=100)
     status = models.CharField(max_length=150, choices=PROCESS_STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -196,8 +196,9 @@ class BenevolenceForm(models.Model):
 class Dependents(models.Model):
     """Each Benevolence Form can have multiple dependents"""
     benevolence_form = models.ForeignKey(BenevolenceForm, on_delete=models.CASCADE, related_name='dependents')
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    age = models.IntegerField()
     relationship = models.CharField(max_length=100)
 
     def __str__(self):
@@ -212,7 +213,7 @@ class ContactForm(models.Model):
     ]
     full_name = models.CharField(max_length=200)
     email = models.EmailField(blank=True)
-    phone_number = models.IntegerField(blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     subject = models.CharField(max_length=100)
     message = models.TextField()
     status = models.CharField(max_length=150, choices=ACTION, default='unread')
