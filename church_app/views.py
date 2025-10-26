@@ -45,7 +45,7 @@ class PrayerRequestViewSet(PublicSubmitView):
     queryset = PrayerRequestForm.objects.all().order_by('-created_at')
     serializer_class = PrayerFormSerializer
 
-    @action(detail='True', methods=['PATCH'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['PATCH'], permission_classes=[IsAuthenticated])
     def update_status(self, request, pk=None):
         prayer = self.get_object()
         new_status = request.data.get('status')

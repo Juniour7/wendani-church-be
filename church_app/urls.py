@@ -4,9 +4,9 @@ from . import views
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
-router.register('prayers', views.PrayerRequestViewSet)
-router.register('baptism', views.BaptismRequestViewSet)
-router.register('dedication', views.DedicationViewSet)
+router.register('prayers', views.PrayerRequestViewSet, basename='prayers')
+router.register('baptism', views.BaptismRequestViewSet, basename='bapstism')
+router.register('dedication', views.DedicationViewSet, basename='dedication')
 
 # Church App Urls
 urlpatterns = [
