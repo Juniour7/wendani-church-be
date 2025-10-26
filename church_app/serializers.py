@@ -203,6 +203,7 @@ class AnnouncementsSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'description',
+            'file'
             'size',
             'created_at'
         ]
