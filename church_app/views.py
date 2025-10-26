@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
-
+from rest_framework.views import APIView
 
 
 from .serializers import (
@@ -280,63 +280,63 @@ def events_list_view(request,pk=None):
 
 # ---------- ANNOUNCEMENTS HANDLING ENDPOINTS ----------
 
-@api_view(['POST', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def announcements_submit(request):
+class AnnouncementsListCreateView(APIView):
     """
-    POST: Create new announcements files
-    PUT: Update current announcements
-    DELETE: Delete announcements
+    GET: List  all announcements
+    POST: Create a new announcements
     """
-    # -------POST--------
-    if request.method == 'POST':
-        serializer = AnnouncementsSerializer(data=request.data)
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        """Listig all announcementsx"""
+        files = Announcements.objects.all().order_by('-created_at')
+        serializer = AnnouncementsSerializer(files, many = True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        """Creating a announcements"""
+        serializer = AnnouncementsSerializer(data= request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # ------UPDATE--------
-    elif request.method == 'PUT':
-        file_id = request.data.get('id') or request.data.get('pk')
+class AnnouncementsDetailView(APIView):
+    """
+    GET: Retrieve an announcement
+    PUT: Update an announcement
+    DELETE: Delete an announcement
+    """
+    permission_classes = [IsAuthenticated]
 
-        if not file_id:
-            return Response({"detail" : "Announcements Id Required To update"}, status=status.HTTP_400_BAD_REQUEST)
-        
+    def get_object(self,pk):
         try:
-            file = Announcements.objects.get(pk=file_id)
+            return Announcements.objects.get(pk=pk)
         except Announcements.DoesNotExist:
-            return Response({"detail" : "File does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            return None
+    
+    def get( self, request, pk):
+        announcement = self.get_object(pk)
+        if not announcement:
+            return Response({"detail": "Announcement not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        serializer = AnnouncementsSerializer(file, data=request.data, partial=True)
+        serializer = AnnouncementsSerializer(announcement)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        announcement = self.get_object(pk)
+        if not announcement:
+            return Response({"detail": "Announcement not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AnnouncementsSerializer(announcement, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    # -------DELETE------
-    elif request.method == 'DELETE':
-        file_id = request.data.get('id') or request.data.get('pk')
 
-        if not file_id:
-            return Response({"detail" : "You need file id to delete a file"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            file = Announcements.objects.get(pk=file_id)
-        except Announcements.DoesNotExist:
-            return Response({"error" : "File does not exists"}, status=status.HTTP_404_NOT_FOUND)
-        
-        file.delete()
-        return Response({"detail" : "File deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-    
+    def delete(self, request, pk):
+        announcement = self.get_object(pk)
+        if not announcement:
+            return Response({"detail": "Announcement not found"}, status=status.HTTP_404_NOT_FOUND)
+        announcement.delete()
+        return Response({"detail": "Announcement deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def announcements_list_view(request):
-    """
-    GET: View a list of file uploads
-    """
-    if request.method == 'GET':
-        files = Announcements.objects.all().order_by('-created_at')
-        serializer = AnnouncementsSerializer(files, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)

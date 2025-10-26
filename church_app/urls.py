@@ -31,6 +31,6 @@ urlpatterns = [
     path('events/<int:pk>/', views.events_list_view, name='events-ddetail'), # Events detail view
 
     # Announcement File ENDPOINTS
-    path('announcements/', views.announcements_submit, name='annoucemnets-create'),
-    path('annoucements/list/', views.announcements_list_view, name='announcements-list'),
+    path('announcements/', views.AnnouncementsListCreateView.as_view(), name='annoucemnets-create'),
+    path('annoucements/<int:pk>/', views.AnnouncementsDetailView.as_view(), name='announcements-detail'),
 ]
