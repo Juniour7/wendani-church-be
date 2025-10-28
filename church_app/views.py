@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-
+from .utils import send_confirmation_email
 
 from .serializers import (
     PrayerFormSerializer, BaptismFormSerializer, DedicationFromSerializer,
@@ -44,6 +44,25 @@ class PrayerRequestViewSet(PublicSubmitView):
     """
     queryset = PrayerRequestForm.objects.all().order_by('-created_at')
     serializer_class = PrayerFormSerializer
+
+    def perform_create(self, serializer):
+        """
+        When a prayer request is submitted (POST),
+        save the data and send an email confirmation if email is provided.
+        """
+        prayer = serializer.save()
+
+        # send confirmation email
+        if getattr(prayer, "email", None):
+            subject = 'Prayer Request Received'
+            message = (
+                f"Dear {getattr(prayer, 'full_name', 'Beloved')},\n\n"
+                "Your prayer request has been received. "
+                "Our prayer team will be praying for you.\n\n"
+                "Blessings,\nKahawa Wendani SDA Church"
+            )
+            send_confirmation_email(prayer.email, subject, message)
+
 
     @action(detail=True, methods=['PATCH'], permission_classes=[IsAuthenticated])
     def update_status(self, request, pk=None):
@@ -96,6 +115,8 @@ class DedicationViewSet(PublicSubmitView):
         dedication.status = new_status
         deication.save()
         return Response(self.get_serializer(dedication).data)
+
+
 
 
 # ---------- MEMEBERSHIP TRANSFER REQUESTS ----------
