@@ -130,17 +130,16 @@ SIMPLE_JWT = {
 # ------------------------------------
 # EMAIL CONFIGURATION
 # ------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = "kahawawendanisda.org"   # Outgoing server
-EMAIL_PORT = 465                      # SMTP SSL port
-EMAIL_USE_SSL = True                  # Use SSL for port 465
-EMAIL_USE_TLS = False                 # Do NOT enable both TLS and SSL
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.kahawawendanisda.org")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))  # Convert to integer
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True").lower() == "true"  # Convert to bool
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "info@kahawawendanisda.org")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-EMAIL_HOST_USER = "info@kahawawendanisda.org"
-EMAIL_HOST_PASSWORD = "k-wendaniv2@2025"
-
-DEFAULT_FROM_EMAIL = "info@kahawawendanisda.org"
 
 # Optional: If you ever test locally without internet
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
