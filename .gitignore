@@ -45,8 +45,8 @@ coverage.xml
 htmlcov/
 
 # Migrations (optional, if you don’t want to commit them initially)
-# */migrations/
-# !*/migrations/__init__.py
+*/migrations/
+!*/migrations/__init__.py
 
 # Deployment / CI
 *.pid
