@@ -160,8 +160,8 @@ class Events(models.Model):
 
     title = models.CharField(max_length=200)
     date = models.DateField()
-    from_date = models.DateField(blank=True)
-    to_date = models.DateField(blank=True)
+    from_date = models.DateField(blank=True, null=True)
+    to_date = models.DateField(blank=True, null=True)
     venue = models.CharField(max_length=200)
     description = models.TextField()
     time = models.TimeField()
