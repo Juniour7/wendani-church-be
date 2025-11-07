@@ -178,11 +178,13 @@ class BenevolenceSerializer(serializers.ModelSerializer):
 
 
 class EventsSerializer(serializers.ModelSerializer):
+    slug = serializers.CharField(read_only=True)
     class Meta:
         model = Events
         fields = [
             'id',
             'title',
+            'slug',
             'date',
             'from_date',
             'to_date',
@@ -193,7 +195,7 @@ class EventsSerializer(serializers.ModelSerializer):
             'image',
             'created_at',
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'slug', 'created_at']
 
 
 class AnnouncementsSerializer(serializers.ModelSerializer):

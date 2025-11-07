@@ -213,7 +213,7 @@ def benevolence_list_view(request):
 
 @api_view(['POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def events_submit(request, pk):
+def events_submit(request, slug=None):
     """
     POST: Create new events
     PUT: Update current events
@@ -231,59 +231,70 @@ def events_submit(request, pk):
 
     # -------UPDATE-----
     elif request.method == 'PUT':
-        event_id = request.data.get('id') or request.data.get('pk')
-        if not event_id:
-            return Response({"detail" : "Event ID is required to update."}, status=status.HTTP_400_BAD_REQUEST)
+        event_slug = slug or request.data.get('slug')
+        if not event_slug:
+            return Response(
+                {'detail' : 'Event slug is required to make update'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
-            event = Events.objects.get(pk=event_id)
+            event = Events.objects.get(slug=event_slug)
         except Events.DoesNotExist:
-            return Response({"detail" : "Event Not Found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail' : 'Events with this slug does not exist'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
         serializer = EventsSerializer(event, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
     # ------DELETE-------
     elif request.method == 'DELETE':
-        event_id = request.data.get('id') or request.data.get('pk')
+        event_slug = slug or request.data.get('slug')
 
-        if not event_id:
+        if not event_slug:
             return Response({"detail" : "Event ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            events = Events.objects.get(pk=event_id)
+            event = Events.objects.get(slug=event_slug)
         except Events.DoesNotExist:
             return Response({"detail" : "Events not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        events.delete()
+        event.delete()
         return Response({"detail" : "Event deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
         
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def events_list_view(request,pk=None):
+def events_list_view(request, slug=None):
     """
     GET:
-    - If `pk` is provided → Retrieve a single event
-    - If `pk` is not provided → Retrieve all events
+    - If `slug` is provided → Retrieve a single event
+    - If `slug` is not provided → Retrieve all events
     """
-    if request.method == 'GET':
-        if pk: # detail view
-            try:
-                event = Events.objects.get(pk=pk)
-            except Events.DoesNotExist:
-                return Response({"detail" : "Event not found"}, status=status.HTTP_404_NOT_FOUND)
-            serializer = EventsSerializer(event)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        else: #list view
-            events = Events.objects.all().order_by('date')
-            serializer = EventsSerializer(events, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+    if slug:
+        # Detail view
+        try:
+            event = Events.objects.get(slug=slug)
+        except Events.DoesNotExist:
+            return Response(
+                {"detail": "Event not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = EventsSerializer(event)
+        return Response(serializer.data)
+
+    # List view
+    events = Events.objects.all().order_by('-date')  # show most recent first (optional)
+    serializer = EventsSerializer(events, many=True)
+    return Response(serializer.data)
+
 
 
 # ---------- ANNOUNCEMENTS HANDLING ENDPOINTS ----------

@@ -26,9 +26,12 @@ urlpatterns = [
     path('benevolence/submit/', views.benevolence_submit_view, name='benevolence-submit'),
 
     # Events Handling endpoints
-    path('events/', views.events_submit, name='events-create'), # update, post and delete
-    path('events/list/', views.events_list_view, name='events-list'), # Events list view
-    path('events/<int:pk>/', views.events_list_view, name='events-ddetail'), # Events detail view
+    # Events endpoints
+    path('events/', views.events_submit, name='events-create'),                    # POST
+    path('events/<slug:slug>/', views.events_submit, name='events-update-delete'), # PUT / DELETE
+    path('events/list/', views.events_list_view, name='events-list'),              # GET (all)
+    path('events/detail/<slug:slug>/', views.events_list_view, name='events-detail'), # GET (single)
+
 
     # Announcement File ENDPOINTS
     path('announcements/', views.AnnouncementsListCreateView.as_view(), name='annoucemnets-create'),
