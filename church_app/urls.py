@@ -28,7 +28,7 @@ urlpatterns = [
     # Events Handling endpoints
     # Events endpoints
     path('events/', views.events_submit, name='events-create'),                    # POST
-    path('events/<slug:slug>/', views.events_submit, name='events-update-delete'), # PUT / DELETE
+    path('events/update/<slug:slug>/', views.events_submit, name='events-update-delete'), # PUT / DELETE
     path('events/list/', views.events_list_view, name='events-list'),              # GET (all)
     path('events/detail/<slug:slug>/', views.events_list_view, name='events-detail'), # GET (single)
 
