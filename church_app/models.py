@@ -158,7 +158,7 @@ class Events(models.Model):
         ('ADRA', 'Adventist Development & Relief Agency (ADRA)'),
         ('POS', 'Possibility Ministries'),
     ]
-    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    slug = models.SlugField(max_length=120,  blank=True)
     title = models.CharField(max_length=200)
     date = models.DateField()
     from_date = models.DateField(blank=True, null=True)
