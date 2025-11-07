@@ -133,25 +133,35 @@ class ChurchMembers(models.Model):
 class Events(models.Model):
     """Events Table To Handle Church Events"""
     DEPARTMENT_CHOICES = [
-        ('Sabbath School' , 'Sabbath School'),
-        ('AYS' , 'Youth Ministries'),
-        ('CM' , 'Children’s Ministries'),
-        ('FL' , 'Family Life'),
-        ('AWM' , 'Adventist Women’s Ministries'),
-        ('AMM' , 'Adventist Men’s Ministries'),
-        ('HM' , 'Health Ministries'),
-        ('ED' , 'Education'),
-        ('STW' , 'Stewardship'),
-        ('PARL' , 'Public Affairs & Religious Liberty'),
-        ('PUB' , 'Publishing'),
-        ('COM' , 'Communication'),
-        ('PCM' , 'Public Campus Ministries'),
-        ('ADV' , 'Adventurers'),
-        ('MUS' , 'Music'),
-        ('DEA' , 'Deacons'),
+        ('SSPM', 'Sabbath School'),
+        ('PM', 'Personal Ministries'),
+        ('YM', 'Youth Ministries'),
+        ('CM', 'Children’s Ministries'),
+        ('FM', 'Family Ministries'),
+        ('AWM', 'Women’s Ministries'),
+        ('AMM', 'Men’s Ministries'),
+        ('HM', 'Health Ministries'),
+        ('EDU', 'Education Department'),
+        ('STW', 'Stewardship Ministries'),
+        ('PARL', 'Public Affairs & Religious Liberty'),
+        ('PUB', 'Publishing Ministries'),
+        ('COM', 'Communication Department'),
+        ('MIN', 'Ministerial Association'),
+        ('CHAP', 'Adventist Chaplaincy Ministries'),
+        ('MIS', 'Adventist Mission'),
+        ('PCM', 'Public Campus Ministries'),
+        ('MUS', 'Music Ministry'),
+        ('ADV', 'Adventurers Club'),
+        ('PATH', 'Pathfinder Club'),
+        ('DEA', 'Deacons / Deaconesses'),
+        ('ADRA', 'Adventist Development & Relief Agency (ADRA)'),
+        ('POS', 'Possibility Ministries'),
     ]
+
     title = models.CharField(max_length=200)
     date = models.DateField()
+    from_date = models.DateField(blank=True)
+    to_date = models.DateField(blank=True)
     venue = models.CharField(max_length=200)
     description = models.TextField()
     time = models.TimeField()

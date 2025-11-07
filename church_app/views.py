@@ -46,22 +46,8 @@ class PrayerRequestViewSet(PublicSubmitView):
     serializer_class = PrayerFormSerializer
 
     def perform_create(self, serializer):
-        """
-        When a prayer request is submitted (POST),
-        save the data and send an email confirmation if email is provided.
-        """
-        prayer = serializer.save()
-
-        # send confirmation email
-        if getattr(prayer, "email", None):
-            subject = 'Prayer Request Received'
-            message = (
-                f"Dear {getattr(prayer, 'full_name', 'Beloved')},\n\n"
-                "Your prayer request has been received. "
-                "Our prayer team will be praying for you.\n\n"
-                "Blessings,\nKahawa Wendani SDA Church"
-            )
-            send_confirmation_email(prayer.email, subject, message)
+        """When a prayer request is submitted (POST), save the data only."""
+        serializer.save()
 
 
     @action(detail=True, methods=['PATCH'], permission_classes=[IsAuthenticated])
@@ -90,7 +76,7 @@ class BaptismRequestViewSet(PublicSubmitView):
         new_status = request.data.get('status')
 
         if new_status not in dict(BaptismRequestForm.ACTION):
-            return Response({"detail" : "Invalid Staus"})
+            return Response({"detail" : "Invalid Status"})
         
         baptism.status = new_status
         baptism.save()
@@ -113,7 +99,7 @@ class DedicationViewSet(PublicSubmitView):
             return Response({"detail" : "Invalid Status"})
         
         dedication.status = new_status
-        deication.save()
+        dedication.save()
         return Response(self.get_serializer(dedication).data)
 
 
@@ -227,12 +213,13 @@ def benevolence_list_view(request):
 
 @api_view(['POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def events_submit(request):
+def events_submit(request, pk):
     """
     POST: Create new events
     PUT: Update current events
     DELETE: Delete events 
     """
+
     # ------POST------
     if request.method == 'POST':
         serializer = EventsSerializer(data=request.data)
@@ -360,4 +347,3 @@ class AnnouncementsDetailView(APIView):
             return Response({"detail": "Announcement not found"}, status=status.HTTP_404_NOT_FOUND)
         announcement.delete()
         return Response({"detail": "Announcement deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-

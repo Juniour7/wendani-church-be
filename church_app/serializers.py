@@ -184,6 +184,8 @@ class EventsSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'date',
+            'from_date',
+            'to_date',
             'venue',
             'description',
             'time',

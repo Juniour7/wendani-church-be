@@ -19,6 +19,31 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 AUTH_USER_MODEL = 'accounts.UserProfile'
 
 
+# --------------------------
+# SECURITY MIDDLEWARE & HEADERS
+# ---------------------------
+
+# Redirect all HTTP requests to HTTPS
+SECURE_SSL_REDIRECT = True
+
+# HTTP Strict Transport Security (forces browsers to use HTTPS)
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30  # 30 days
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = False  # set to True only after confirming HTTPS is fully working
+
+# Prevent information leaks and some browser-based attacks
+SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Clickjacking protection (use "SAMEORIGIN" if you use frames within your own site)
+X_FRAME_OPTIONS = "DENY"
+
+# Ensures Django knows it's behind a proxy/load balancer using HTTPS (e.g., Render, Nginx)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+
 # -------------------------------------------------------------------
 # APPLICATIONS
 # -------------------------------------------------------------------
@@ -43,7 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ← required for static files on Render
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -74,7 +99,14 @@ DATABASES = {
     }
 }
 
-# DATABASES = { 'default': { 'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3', } }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',  # Path to the SQLite database file
+#     }
+# }
+
+
 
 # -------------------------------------------------------------------
 # STATIC FILES
@@ -89,7 +121,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # you can create this folder if it doesn’t exist
+        "DIRS": [BASE_DIR / "templates"],  
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -126,20 +158,3 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-
-# ------------------------------------
-# EMAIL CONFIGURATION
-# ------------------------------------
-
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.kahawawendanisda.org")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))  # Convert to integer
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True").lower() == "true"  # Convert to bool
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").lower() == "true"
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "info@kahawawendanisda.org")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
-
-
-# Optional: If you ever test locally without internet
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
