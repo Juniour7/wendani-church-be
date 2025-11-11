@@ -6,6 +6,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('form/', include('church_app.urls')), # form api endpoints
+    path('form/', include('church_app.urls')), 
     path('api/', include('accounts.urls')),
+    path('api/v1/mpesa/', include('payments.urls')),
 ]   

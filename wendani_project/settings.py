@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from decouple import config
 from datetime import timedelta
 
 
@@ -49,6 +50,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # -------------------------------------------------------------------
 
 INSTALLED_APPS = [
+    'django_daraja',
+    'payments',
     'accounts',
     'church_app',
     'blog_app',
@@ -88,23 +91,23 @@ ROOT_URLCONF = 'wendani_project.urls'
 # -------------------------------------------------------------------
 
 # Render provides DATABASE_URL in the environment
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("PA_DB_NAME"),
-        'USER': os.getenv("PA_DB_USER"),
-        'PASSWORD': os.getenv("PA_DB_PASSWORD"),
-        'HOST': os.getenv("PA_DB_HOST"),
-        'PORT': os.getenv("PA_DB_PORT", "3306"),
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',  # Path to the SQLite database file
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': os.getenv("PA_DB_NAME"),
+#         'USER': os.getenv("PA_DB_USER"),
+#         'PASSWORD': os.getenv("PA_DB_PASSWORD"),
+#         'HOST': os.getenv("PA_DB_HOST"),
+#         'PORT': os.getenv("PA_DB_PORT", "3306"),
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # Path to the SQLite database file
+    }
+}
 
 
 
@@ -158,3 +161,11 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+# Mpesa Configurations
+MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
+MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY')
+MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET')
+MPESA_SHORTCODE = config('MPESA_SHORTCODE')
+MPESA_EXPRESS_SHORTCODE = config('MPESA_EXPRESS_SHORTCODE')
+MPESA_PASSKEY = config('MPESA_PASSKEY')
+MPESA_SHORTCODE_TYPE = 'paybill' # Use 'till_number' for Buy Goods
