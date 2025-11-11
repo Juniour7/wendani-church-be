@@ -1,9 +1,10 @@
 # mpesa/views.py
-
+from datetime import datetime
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -70,9 +71,16 @@ class InitiatePaymentAPIView(APIView):
 # It needs to be accessible without authentication/tokens.
 @method_decorator(csrf_exempt, name='dispatch')
 class MpesaCallbackView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         data = request.data
         stk_callback = data.get('Body', {}).get('stkCallback', {})
+        
+        # Log the callback data so you can see it in your console
+        print("--- M-PESA CALLBACK RECEIVED ---")
+        print(stk_callback)
         
         result_code = stk_callback.get('ResultCode')
         checkout_request_id = stk_callback.get('CheckoutRequestID')
@@ -80,25 +88,38 @@ class MpesaCallbackView(APIView):
         try:
             transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
         except MpesaTransaction.DoesNotExist:
-            # Safaricom might retry, so it's okay if it's not found immediately.
-            # You might want to log this for monitoring.
             return Response({"status": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
 
         if result_code == 0:
-            # Payment successful
             transaction.status = 'SUCCESS'
             callback_metadata = stk_callback.get('CallbackMetadata', {}).get('Item', [])
+            
             for item in callback_metadata:
-                if item['Name'] == 'MpesaReceiptNumber':
-                    transaction.mpesa_receipt_number = item['Value']
-                elif item['Name'] == 'TransactionDate':
-                    # You might need to parse this date string to a proper datetime object
-                    transaction.transaction_date = item['Value'] 
+                if item.get('Name') == 'MpesaReceiptNumber':
+                    transaction.mpesa_receipt_number = item.get('Value')
+                
+                elif item.get('Name') == 'TransactionDate':
+                    # THE FIX IS HERE:
+                    # 1. Convert the numeric value to a string
+                    date_str = str(item.get('Value'))
+                    # 2. Parse the string into a datetime object
+                    transaction.transaction_date = datetime.strptime(date_str, '%Y%m%d%H%M%S')
+            
             transaction.save()
         else:
-            # Payment failed or was cancelled
             transaction.status = 'FAILED'
             transaction.save()
         
-        # Respond to Safaricom's API
         return Response({"status": "Callback processed successfully"}, status=status.HTTP_200_OK)
+    
+
+# -----------View All Transaction Made-----------
+
+class MpesaTransactionsAPIView(ListAPIView):
+    """
+    This view provides a list of all Mpesa transactions.
+    Only admin users can access this view.
+    """
+    queryset = MpesaTransaction.objects.all().order_by('-id')
+    serializer_class = MpesaTransactionSerializer
+    permission_classes = [IsAuthenticated]
