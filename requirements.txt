@@ -15,7 +15,6 @@ dotenv==0.9.9
 filelock==3.19.1
 gunicorn==23.0.0
 idna==3.11
-mysqlclient==2.2.7
 packaging==25.0
 pillow==11.3.0
 pipenv==2025.0.4
@@ -24,7 +23,6 @@ psycopg2-binary==2.9.11
 pycparser==2.23
 Pygments==2.19.2
 PyJWT==2.10.1
-PyMySQL==1.1.2
 python-decouple==3.8
 python-dotenv==1.1.1
 requests==2.32.5
