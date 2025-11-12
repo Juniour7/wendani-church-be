@@ -131,8 +131,8 @@ DATABASES = {
 STATICFILES_LOCATION = 'static'
 MEDIAFILES_LOCATION = 'media'
 
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/'
+STATIC_URL = f'https://churchmedia.kahawawendanisda.org/{STATICFILES_LOCATION}/'
+MEDIA_URL = f'https://churchmedia.kahawawendanisda.org/{MEDIAFILES_LOCATION}/'
 
 # Storage Backends
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
