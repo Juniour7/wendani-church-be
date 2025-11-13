@@ -85,6 +85,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "https://churchmedia.kahawawendanisda.org",
     "https://kahawawendanisda.org",
+    "http://localhost:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
