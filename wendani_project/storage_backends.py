@@ -4,4 +4,4 @@ class MediaStorage(S3Boto3Storage):
     location = "media"
     default_acl = "public-read"
     file_overwrite = False
-    custom_domain = "media.churchmedia.kahawawendanisda.org"
+    custom_domain = "churchmedia.kahawawendanisda.org"
