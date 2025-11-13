@@ -48,7 +48,7 @@ class InitiatePaymentAPIView(APIView):
                     amount=int(amount), # Amount should be an integer
                     account_reference=account_reference,
                     transaction_desc=transaction_desc,
-                    callback_url='https://agreeable-hermitical-annamaria.ngrok-free.dev/api/v1/mpesa/callback' # IMPORTANT: Update this URL
+                    callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback' # IMPORTANT: Update this URL
                 )
 
                 # If STK push is successful, save the transaction with the CheckoutRequestID
