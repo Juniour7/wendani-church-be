@@ -130,19 +130,22 @@ DATABASES = {
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
 # ---------------------------------------------------------
 # MEDIA FILES (served via S3)
 # ---------------------------------------------------------
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
-AWS_S3_CUSTOM_DOMAIN = "churchmedia.kahawawendanisda.org"  # your subdomain
-AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-AWS_DEFAULT_ACL = "public-read"
+# AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+# AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+# AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+# AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
+# AWS_S3_CUSTOM_DOMAIN = "churchmedia.kahawawendanisda.org"  # your subdomain
+# AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+# AWS_DEFAULT_ACL = "public-read"
 
-DEFAULT_FILE_STORAGE = "wendani_project.storage_backends.MediaStorage"
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
 # ---------------------------------------------------------
 # REST FRAMEWORK & JWT
