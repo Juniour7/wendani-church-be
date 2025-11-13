@@ -17,10 +17,8 @@ from .serializers import MpesaTransactionSerializer
 class InitiatePaymentAPIView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
-        # Use the serializer to validate incoming data
-        # Note: We are not saving the serializer directly yet. 
-        # First, we trigger the STK push.
         serializer = MpesaTransactionSerializer(data=request.data)
         if serializer.is_valid():
             validated_data = serializer.validated_data
@@ -29,10 +27,9 @@ class InitiatePaymentAPIView(APIView):
             purpose_choice = validated_data.get('purpose')
             other_purpose_details = validated_data.get('other_purpose_details')
 
-            # Determine the final purpose text
             final_purpose_text = other_purpose_details if purpose_choice == 'Other' else purpose_choice
 
-            # Format the phone number (e.g., to 254...)
+            # Normalize phone number
             if phone_number.startswith('0'):
                 phone_number = '254' + phone_number[1:]
             elif phone_number.startswith('+'):
@@ -42,29 +39,55 @@ class InitiatePaymentAPIView(APIView):
             transaction_desc = f"#{final_purpose_text}"
 
             cl = MpesaClient()
+
             try:
                 response = cl.stk_push(
                     phone_number=phone_number,
-                    amount=int(amount), # Amount should be an integer
+                    amount=int(amount),
                     account_reference=account_reference,
                     transaction_desc=transaction_desc,
-                    callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback' # IMPORTANT: Update this URL
+                    callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback'
                 )
 
-                # If STK push is successful, save the transaction with the CheckoutRequestID
-                if hasattr(response, 'checkout_request_id'):
-                    serializer.save(checkout_request_id=response.checkout_request_id)
-                    return Response({
+                # Ensure checkout_request_id exists
+                checkout_request_id = getattr(response, 'checkout_request_id', None)
+                if not checkout_request_id:
+                    return Response(
+                        {"error": "MPESA did not return a CheckoutRequestID"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Prevent duplicates
+                transaction, created = MpesaTransaction.objects.get_or_create(
+                    checkout_request_id=checkout_request_id,
+                    defaults={
+                        "name": validated_data.get("name"),
+                        "phone_number": phone_number,
+                        "amount": amount,
+                        "purpose": purpose_choice,
+                        "other_purpose_details": other_purpose_details,
+                    }
+                )
+
+                if not created:
+                    return Response(
+                        {"error": "Transaction already exists"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                return Response(
+                    {
                         "message": "STK push initiated successfully. Please enter your PIN.",
-                        "data": serializer.data
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({"error": "Failed to initiate STK push."}, status=status.HTTP_400_BAD_REQUEST)
+                        "data": MpesaTransactionSerializer(transaction).data
+                    },
+                    status=status.HTTP_201_CREATED
+                )
 
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # --- M-Pesa Callback View ---
 # This view is a webhook and should not be a DRF view.
@@ -77,39 +100,55 @@ class MpesaCallbackView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         stk_callback = data.get('Body', {}).get('stkCallback', {})
-        
-        # Log the callback data so you can see it in your console
+
+        # Log for debugging
         print("--- M-PESA CALLBACK RECEIVED ---")
         print(stk_callback)
-        
+
         result_code = stk_callback.get('ResultCode')
         checkout_request_id = stk_callback.get('CheckoutRequestID')
 
+        if not checkout_request_id:
+            return Response(
+                {"error": "Missing CheckoutRequestID in callback"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get transaction or return 404
         try:
             transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
         except MpesaTransaction.DoesNotExist:
-            return Response({"status": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Transaction with this CheckoutRequestID not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Prevent double processing
+        if transaction.status in ['SUCCESS', 'FAILED']:
+            return Response(
+                {"status": f"Transaction already processed with status: {transaction.status}"},
+                status=status.HTTP_200_OK
+            )
 
         if result_code == 0:
             transaction.status = 'SUCCESS'
             callback_metadata = stk_callback.get('CallbackMetadata', {}).get('Item', [])
-            
+
             for item in callback_metadata:
                 if item.get('Name') == 'MpesaReceiptNumber':
                     transaction.mpesa_receipt_number = item.get('Value')
-                
                 elif item.get('Name') == 'TransactionDate':
-                    # THE FIX IS HERE:
-                    # 1. Convert the numeric value to a string
                     date_str = str(item.get('Value'))
-                    # 2. Parse the string into a datetime object
-                    transaction.transaction_date = datetime.strptime(date_str, '%Y%m%d%H%M%S')
-            
+                    try:
+                        transaction.transaction_date = datetime.strptime(date_str, '%Y%m%d%H%M%S')
+                    except ValueError:
+                        print(f"Warning: Could not parse transaction date: {date_str}")
+
             transaction.save()
         else:
             transaction.status = 'FAILED'
             transaction.save()
-        
+
         return Response({"status": "Callback processed successfully"}, status=status.HTTP_200_OK)
     
 

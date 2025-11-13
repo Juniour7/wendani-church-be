@@ -18,7 +18,7 @@ class MpesaTransaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     purpose = models.CharField(max_length=50, choices=PURPOSE_CHOICES)
     other_purpose_details = models.CharField(max_length=50, blank=True, null=True, help_text="If 'Other', please specify")
-    checkout_request_id = models.CharField(max_length=100, unique=True)
+    checkout_request_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
     status = models.CharField(max_length=20, default='PENDING')
     mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
     transaction_date = models.DateTimeField(blank=True, null=True)
