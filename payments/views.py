@@ -38,8 +38,8 @@ class InitiatePaymentAPIView(APIView):
             elif phone_number.startswith('+'):
                 phone_number = phone_number[1:]
 
-            account_reference = f"CHURCH-{purpose_choice.upper()}"
-            transaction_desc = f"Contribution for {final_purpose_text}"
+            account_reference = f"#{purpose_choice.upper()}"
+            transaction_desc = f"#{final_purpose_text}"
 
             cl = MpesaClient()
             try:
