@@ -1,7 +1,3 @@
-print("🔍 Loading .env from:", BASE_DIR / ".env")
-print("📦 File exists?", os.path.exists(BASE_DIR / ".env"))
-
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
