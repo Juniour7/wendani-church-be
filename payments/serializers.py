@@ -6,9 +6,9 @@ class MpesaTransactionSerializer(serializers.ModelSerializer):
         model = MpesaTransaction
         fields = [
             'id', 'name', 'phone_number', 'email', 'amount', 'purpose', 
-            'other_purpose_details', 'status', 'mpesa_receipt_number', 'transaction_date'
+            'other_purpose_details', 'status', 'mpesa_receipt_number', 'checkout_request_id', 'transaction_date'
         ]
-        read_only_fieilds = ['id', 'status', 'mpesa_receipt_number', 'transaction_date']
+        read_only_fields = ['id', 'status', 'mpesa_receipt_number', 'transaction_date', 'checkout_request_id']
 
     
     def validate(self, data):
