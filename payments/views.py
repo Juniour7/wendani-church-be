@@ -208,25 +208,20 @@ class TransactionStatusAPIView(APIView):
 
     def get(self, request):
         checkout_request_id = request.query_params.get("checkout_request_id")
-        phone_number = request.query_params.get("phone_number")
-        amount = request.query_params.get("amount")
-        purpose = request.query_params.get("purpose")
 
         if not checkout_request_id:
-            return Response({"error": "checkout_request_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "checkout_request_id is required"}, status=400)
 
         try:
             transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
         except MpesaTransaction.DoesNotExist:
-            return Response({"status": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"status": "not_found"}, status=404)
 
-        # Optional: double-check that amount, phone, purpose match
-        if str(transaction.amount) != str(amount) or transaction.phone_number != phone_number or transaction.purpose != purpose:
-            return Response({"status": "mismatch"}, status=status.HTTP_400_BAD_REQUEST)
-
+        # Return status without strict matching
         return Response({
             "status": transaction.status,
             "mpesa_receipt_number": transaction.mpesa_receipt_number,
             "transaction_date": transaction.transaction_date,
         })
+
 
