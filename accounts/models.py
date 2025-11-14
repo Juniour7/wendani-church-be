@@ -28,6 +28,7 @@ class UserProfile(AbstractUser):
     ROLES_CHOICES = [
         ('admin', 'admin'),
         ('elder', 'elder'),
+        ('treasurer', 'treasurer'),
     ]
     username = None
     full_name = models.CharField(max_length=100)
