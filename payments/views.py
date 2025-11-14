@@ -37,8 +37,9 @@ class InitiatePaymentAPIView(APIView):
             elif phone_number.startswith('+'):
                 phone_number = phone_number[1:]
 
-            account_reference = f"#{purpose_choice.upper()}"
-            transaction_desc = f"#{final_purpose_text}"
+            formatted_purpose = final_purpose_text.upper().replace(' ', '')
+            account_reference = f"441211#{formatted_purpose}"
+            transaction_desc = f"#{formatted_purpose}"
 
             cl = MpesaClient()
 
