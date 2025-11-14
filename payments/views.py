@@ -9,6 +9,7 @@ from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
+from django.db.models import Q
 
 from .models import MpesaTransaction
 from .serializers import MpesaTransactionSerializer
@@ -160,8 +161,44 @@ class MpesaTransactionsAPIView(ListAPIView):
     This view provides a list of all Mpesa transactions.
     Only admin users can access this view.
     """
-    queryset = MpesaTransaction.objects.all().order_by('-id')
     serializer_class = MpesaTransactionSerializer
     permission_classes = [IsTreasurer]
+
+    def get_queryset(self):
+        queryset = MpesaTransaction.objects.all().order_by('-id')
+
+        # ----- GET PARAMETERS -----
+        status = self.request.query_params.get('status')
+        purpose = self.request.query_params.get('purpose')
+        search = self.request.query_params.get('search')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+
+        # ----------FILTER:STATUS-------
+        if status and status != "all":
+            queryset = queryset.filter(status__iexact=status)
+
+        # ----- FILTER: Purpose -----
+        if purpose and purpose != "all":
+            queryset = queryset.filter(purpose__iexact=purpose)
+
+        # ----- SEARCH (name, phone, email, receipt) -----
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search)
+                | Q(phone_number__icontains=search)
+                | Q(email__icontains=search)
+                | Q(mpesa_receipt_number__icontains=search)
+            )
+        
+        # ----- DATE RANGE -----
+        if start_date:
+            queryset = queryset.filter(transaction_date__date__gte=start_date)
+
+
+        if end_date:
+            queryset = queryset.filter(transaction_date__date__lte=end_date)
+        
+        return queryset
 
 
