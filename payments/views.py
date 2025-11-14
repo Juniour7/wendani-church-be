@@ -12,6 +12,7 @@ import json
 
 from .models import MpesaTransaction
 from .serializers import MpesaTransactionSerializer
+from .permissions import IsTreasurer
 
 # -----------------API TO INITIATE PAYMENT-------------------
 class InitiatePaymentAPIView(APIView):
@@ -161,4 +162,6 @@ class MpesaTransactionsAPIView(ListAPIView):
     """
     queryset = MpesaTransaction.objects.all().order_by('-id')
     serializer_class = MpesaTransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsTreasurer]
+
+
