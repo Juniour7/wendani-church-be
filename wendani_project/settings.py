@@ -136,17 +136,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
-# ---------------------------------------------------------
-# MEDIA FILES (served via S3)
-# ---------------------------------------------------------
-# AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-# AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-# AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-# AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
-# AWS_S3_CUSTOM_DOMAIN = "churchmedia.kahawawendanisda.org"  # your subdomain
-# AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-# AWS_DEFAULT_ACL = "public-read"
-
 
 # ---------------------------------------------------------
 # REST FRAMEWORK & JWT
@@ -159,7 +148,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
+    "PAGE_SIZE": 150,
 }
 
 SIMPLE_JWT = {
