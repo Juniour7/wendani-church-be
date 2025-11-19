@@ -22,6 +22,10 @@ class PrayerFormSerializer(serializers.ModelSerializer):
             'phone_number',
             'prayer_type',
             'prayer_request',
+            'wants_visitation',
+            'prayer_cell',
+            'general_area',
+            'visitation_method',
             'status',
             'created_at'
         ]

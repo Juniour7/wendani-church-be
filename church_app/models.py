@@ -17,11 +17,40 @@ class PrayerRequestForm(models.Model):
         ('thanksgiving', 'thanksgiving' ),
         ('other', 'other' ),
     ]
+    VISITATION_METHODS = [
+        ('call', 'Call with Pastor'),
+        ('home_visit', 'Visit at Home'),
+    ]
+    PRAYER_CELLS = [
+        ('Garrison', 'Garrison'),
+        ('Matopeni', 'Matopeni'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Solomon Plaza', 'Solomon Plaza'),
+        ('Kwangethe', 'Kwangethe'),
+        ('Area 40', 'Area 40'),
+        ('Lower Cleanshelf', 'Lower Cleanshelf'),
+        ('Upper Claenshelf', 'Upper Claenshelf'),
+        ('Mamaland', 'Mamaland'),
+        ('Sukari A', 'Sukari A'),
+        ('Sukari B', 'Sukari B'),
+        ('Clanne', 'Clanne'),
+        ('None', 'None'),
+    ]
+
+    prayer_type = models.CharField(max_length=200, choices=REQUEST_TYPE, default='personal request')
+    prayer_request = models.TextField()
+
+    # --------------------
+    # VISITATION (optional)
+    # --------------------
+    wants_visitation = models.BooleanField(default=False)
     full_name = models.CharField(max_length=200, blank=True, null=True) #optional
     email = models.EmailField(blank=True, null=True) #optional
     phone_number = models.CharField(max_length=15, blank=True, null=True) #optional
-    prayer_type = models.CharField(max_length=200, choices=REQUEST_TYPE, default='personal request')
-    prayer_request = models.TextField()
+    prayer_cell = models.CharField(max_length=50, choices=PRAYER_CELLS, blank=True, null=True)
+    general_area = models.CharField(max_length=150, blank=True, null=True)
+    visitation_method = models.CharField(max_length=50, choices=VISITATION_METHODS, blank=True, null=True)
+
     status = models.CharField(max_length=150, choices=ACTION, default='unread')
     created_at = models.DateTimeField(auto_now_add=True)
 
