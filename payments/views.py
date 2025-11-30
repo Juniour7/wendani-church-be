@@ -8,93 +8,84 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-import json
 from django.db.models import Q
 
-from .models import MpesaTransaction
+from .models import MpesaTransaction, MpesaPurpose
 from .serializers import MpesaTransactionSerializer
 from .permissions import IsTreasurer
 
-# -----------------API TO INITIATE PAYMENT-------------------
+
+# ----------------- API TO INITIATE PAYMENT -------------------
 class InitiatePaymentAPIView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = MpesaTransactionSerializer(data=request.data)
-        if serializer.is_valid():
-            validated_data = serializer.validated_data
-            phone_number = validated_data.get('phone_number')
-            amount = validated_data.get('amount')
-            purpose_choice = validated_data.get('purpose')
-            other_purpose_details = validated_data.get('other_purpose_details')
 
-            final_purpose_text = other_purpose_details if purpose_choice == 'Other' else purpose_choice
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Normalize phone number
-            if phone_number.startswith('0'):
-                phone_number = '254' + phone_number[1:]
-            elif phone_number.startswith('+'):
-                phone_number = phone_number[1:]
+        validated = serializer.validated_data
+        phone_number = validated.get("phone_number")
+        purposes = validated.get("purposes")   # list of {"purpose", "amount", ...}
 
-            formatted_purpose = final_purpose_text.upper().replace(' ', '')
-            account_reference = f"441211#{formatted_purpose}"
-            transaction_desc = f"#{formatted_purpose}"
+        # Normalize phone number
+        if phone_number.startswith("0"):
+            phone_number = "254" + phone_number[1:]
+        elif phone_number.startswith("+"):
+            phone_number = phone_number[1:]
 
-            cl = MpesaClient()
+        # Determine STK label (#TITHE, #MULTI, etc.)
+        if len(purposes) == 1:
+            tag = purposes[0]["purpose"].upper().replace(" ", "")
+        else:
+            tag = "MULTI"
 
-            try:
-                response = cl.stk_push(
-                    phone_number=phone_number,
-                    amount=int(amount),
-                    account_reference=account_reference,
-                    transaction_desc=transaction_desc,
-                    callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback'
-                )
+        account_reference = f"441211#{tag}"
+        transaction_desc = f"#{tag}"
 
-                # Ensure checkout_request_id exists
-                checkout_request_id = getattr(response, 'checkout_request_id', None)
-                if not checkout_request_id:
-                    return Response(
-                        {"error": "MPESA did not return a CheckoutRequestID"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+        # SUM all amounts
+        total_amount = sum([p["amount"] for p in purposes])
 
-                # Prevent duplicates
-                transaction, created = MpesaTransaction.objects.get_or_create(
-                    checkout_request_id=checkout_request_id,
-                    defaults={
-                        "name": validated_data.get("name"),
-                        "phone_number": phone_number,
-                        "amount": amount,
-                        "purpose": purpose_choice,
-                        "other_purpose_details": other_purpose_details,
-                    }
-                )
+        cl = MpesaClient()
 
-                if not created:
-                    return Response(
-                        {"error": "Transaction already exists"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+        try:
+            response = cl.stk_push(
+                phone_number=phone_number,
+                amount=int(total_amount),
+                account_reference=account_reference,
+                transaction_desc=transaction_desc,
+                callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback'
+            )
 
+            checkout_request_id = getattr(response, "checkout_request_id", None)
+            if not checkout_request_id:
                 return Response(
-                    {
-                        "message": "STK push initiated successfully. Please enter your PIN.",
-                        "data": MpesaTransactionSerializer(transaction).data
-                    },
-                    status=status.HTTP_201_CREATED
+                    {"error": "MPESA did not return a CheckoutRequestID"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Save parent + child purposes
+            transaction = serializer.save(
+                checkout_request_id=checkout_request_id,
+                total_amount=total_amount
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "message": "STK push initiated successfully. Please enter your PIN.",
+                    "data": MpesaTransactionSerializer(transaction).data
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# --- M-Pesa Callback View ---
-# This view is a webhook and should not be a DRF view.
-# It needs to be accessible without authentication/tokens.
+
+# ------------------------ M-Pesa Callback View ------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class MpesaCallbackView(APIView):
     authentication_classes = []
@@ -103,10 +94,6 @@ class MpesaCallbackView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         stk_callback = data.get('Body', {}).get('stkCallback', {})
-
-        # Log for debugging
-        print("--- M-PESA CALLBACK RECEIVED ---")
-        print(stk_callback)
 
         result_code = stk_callback.get('ResultCode')
         checkout_request_id = stk_callback.get('CheckoutRequestID')
@@ -117,7 +104,6 @@ class MpesaCallbackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Get transaction or return 404
         try:
             transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
         except MpesaTransaction.DoesNotExist:
@@ -126,83 +112,82 @@ class MpesaCallbackView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Prevent double processing
-        if transaction.status in ['SUCCESS', 'FAILED']:
+        # Avoid double processing
+        if transaction.status in ["SUCCESS", "FAILED"]:
             return Response(
-                {"status": f"Transaction already processed with status: {transaction.status}"},
+                {"status": f"Transaction already processed: {transaction.status}"},
                 status=status.HTTP_200_OK
             )
 
+        # SUCCESS
         if result_code == 0:
-            transaction.status = 'SUCCESS'
-            callback_metadata = stk_callback.get('CallbackMetadata', {}).get('Item', [])
+            transaction.status = "SUCCESS"
+            callback_metadata = stk_callback.get("CallbackMetadata", {}).get("Item", [])
 
             for item in callback_metadata:
-                if item.get('Name') == 'MpesaReceiptNumber':
-                    transaction.mpesa_receipt_number = item.get('Value')
-                elif item.get('Name') == 'TransactionDate':
-                    date_str = str(item.get('Value'))
+                if item.get("Name") == "MpesaReceiptNumber":
+                    transaction.mpesa_receipt_number = item.get("Value")
+                elif item.get("Name") == "TransactionDate":
+                    date_str = str(item.get("Value"))
                     try:
-                        transaction.transaction_date = datetime.strptime(date_str, '%Y%m%d%H%M%S')
+                        transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
                     except ValueError:
-                        print(f"Warning: Could not parse transaction date: {date_str}")
+                        pass
 
             transaction.save()
+
+        # FAILURE
         else:
-            transaction.status = 'FAILED'
+            transaction.status = "FAILED"
             transaction.save()
 
         return Response({"status": "Callback processed successfully"}, status=status.HTTP_200_OK)
-    
 
-# -----------View All Transaction Made-----------
 
+
+# ----------------- View All Transactions -------------------
 class MpesaTransactionsAPIView(ListAPIView):
-    """
-    This view provides a list of all Mpesa transactions.
-    Only admin users can access this view.
-    """
     serializer_class = MpesaTransactionSerializer
     permission_classes = [IsTreasurer]
 
     def get_queryset(self):
-        queryset = MpesaTransaction.objects.all().order_by('-id')
+        queryset = MpesaTransaction.objects.all().order_by("-id")
 
-        # ----- GET PARAMETERS -----
-        status = self.request.query_params.get('status')
-        purpose = self.request.query_params.get('purpose')
-        search = self.request.query_params.get('search')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
+        status_q = self.request.query_params.get("status")
+        purpose = self.request.query_params.get("purpose")
+        search = self.request.query_params.get("search")
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
 
-        # ----------FILTER:STATUS-------
-        if status and status != "all":
-            queryset = queryset.filter(status__iexact=status)
+        # Filter by status
+        if status_q and status_q != "all":
+            queryset = queryset.filter(status__iexact=status_q)
 
-        # ----- FILTER: Purpose -----
+        # Filter by specific purpose inside children
         if purpose and purpose != "all":
-            queryset = queryset.filter(purpose__iexact=purpose)
+            queryset = queryset.filter(purposes__purpose__iexact=purpose)
 
-        # ----- SEARCH (name, phone, email, receipt) -----
+        # Search
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search)
                 | Q(phone_number__icontains=search)
                 | Q(email__icontains=search)
                 | Q(mpesa_receipt_number__icontains=search)
-            )
-        
-        # ----- DATE RANGE -----
+            ).distinct()
+
+        # Date filters
         if start_date:
             queryset = queryset.filter(transaction_date__date__gte=start_date)
 
-
         if end_date:
             queryset = queryset.filter(transaction_date__date__lte=end_date)
-        
+
         return queryset
 
 
+
+# ----------------- Check Transaction Status -------------------
 class TransactionStatusAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -217,11 +202,22 @@ class TransactionStatusAPIView(APIView):
         except MpesaTransaction.DoesNotExist:
             return Response({"status": "not_found"}, status=404)
 
-        # Return status without strict matching
+        purposes = [
+            {
+                "purpose": p.purpose,
+                "amount": p.amount,
+                "other_purpose_details": p.other_purpose_details,
+            }
+            for p in transaction.purposes.all()
+        ]
+
+        tag = "#MULTI" if len(purposes) > 1 else f"#{purposes[0]['purpose'].upper()}"
+
         return Response({
             "status": transaction.status,
             "mpesa_receipt_number": transaction.mpesa_receipt_number,
             "transaction_date": transaction.transaction_date,
+            "total_amount": transaction.total_amount,
+            "purposes": purposes,
+            "tag": tag
         })
-
-
