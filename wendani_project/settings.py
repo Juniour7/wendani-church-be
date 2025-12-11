@@ -159,17 +159,6 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# ---------------------------------------------------------
-# MPESA CONFIGURATION
-# ---------------------------------------------------------
-MPESA_ENVIRONMENT = os.getenv("MPESA_ENVIRONMENT")
-MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
-MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
-MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE")
-MPESA_EXPRESS_SHORTCODE = os.getenv("MPESA_EXPRESS_SHORTCODE")
-MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
-MPESA_SHORTCODE_TYPE = "paybill"  # 'paybill' or 'till_number'
-
 
 # ---------------------------------------------------------
 # CO-OP BANK INTEGRATION

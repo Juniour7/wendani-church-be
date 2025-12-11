@@ -23,6 +23,7 @@ class InitiatePaymentAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         serializer = MpesaTransactionSerializer(data=request.data)
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
@@ -36,47 +37,56 @@ class InitiatePaymentAPIView(APIView):
         elif phone.startswith("+"):
             phone = phone[1:]
 
-        # Build OtherDetails payload for Co-op
+        # ----- Build Co-op OtherDetails and calculate total_amount -----
         other_details = []
         total_amount = 0
 
         for p in purposes:
             purpose_name = p["purpose"]
-            amount = float(p["amount"])
+            amount = int(p["amount"])
             total_amount += amount
 
-            key = p.get("other_purpose_details") if purpose_name == "Other" else purpose_name
+            # Custom field support
+            if purpose_name == "Other" and p.get("other_purpose_details"):
+                key = p["other_purpose_details"]
+            else:
+                key = purpose_name
+
             other_details.append({"Name": key, "Value": str(amount)})
 
-        # Tag for transaction description
-        tag = purposes[0]["purpose"].replace(" ", "") if len(purposes) == 1 else "MULTI"
-        local_reference = f"{tag}"  # temporary local ref
+        # Tag for narration
+        if len(purposes) == 1:
+            tag = purposes[0]["purpose"].replace(" ", "")
+        else:
+            tag = "MULTI"
 
-        # Save initial transaction
-        transaction = serializer.save(
-            checkout_request_id=local_reference,
-            total_amount=total_amount
-        )
+        # ----- Save transaction WITHOUT checkout_request_id -----
+        transaction = serializer.save(total_amount=total_amount)
 
-        # Call Co-op Bank API
+        # ----- Call Co-op Bank STK Push -----
         try:
             response = stk_push_request(
                 phone=phone,
                 amount=int(total_amount),
-                reference=local_reference,  # Co-op will return its own MessageReference
+                reference=tag,             # local reference for Co-op
                 other_details=other_details,
                 description=tag
             )
         except Exception as e:
+            # If STK push fails, mark transaction as failed
+            transaction.status = "FAILED"
+            transaction.save(update_fields=["status"])
             return Response({"error": str(e)}, status=500)
 
-        # Use Co-op's MessageReference as the official checkout_request_id
+        # ----- Update transaction with Co-op MessageReference -----
         message_ref = response.get("MessageReference")
         if not message_ref:
+            transaction.status = "FAILED"
+            transaction.save(update_fields=["status"])
             return Response({"error": "No MessageReference returned from Co-op"}, status=500)
 
         transaction.checkout_request_id = message_ref
-        transaction.save()
+        transaction.save(update_fields=["checkout_request_id"])
 
         return Response({
             "message": "STK Push sent. Enter PIN.",
@@ -84,6 +94,7 @@ class InitiatePaymentAPIView(APIView):
             "amount": total_amount,
             "co_op_response": response,
         }, status=201)
+
 
 
 
