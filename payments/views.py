@@ -118,25 +118,27 @@ class MpesaCallbackView(APIView):
         if transaction.status in ["SUCCESS", "FAILED"]:
             return Response({"status": f"Transaction already processed: {transaction.status}"}, status=200)
 
+        # Default transaction_date
+        transaction_date = datetime.now()
+
         if response_code == "0":
             # Payment successful
             transaction.status = "SUCCESS"
-            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
-            # If Co-op returns a transaction date, parse it; else use now()
-            date_str = result.get("TransactionDate")
+            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber") or result.get("ReceiptNumber")
+            # Parse transaction date if provided
+            date_str = result.get("TransactionDate") or result.get("TransDate")
             if date_str:
                 try:
-                    transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+                    transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
                 except ValueError:
-                    transaction.transaction_date = datetime.now()
-            else:
-                transaction.transaction_date = datetime.now()
+                    transaction_date = datetime.now()
+            transaction.transaction_date = transaction_date
         else:
             # Payment failed
             transaction.status = "FAILED"
+            transaction.transaction_date = transaction_date
 
         transaction.save()
-
         return Response({"status": "Callback processed successfully"}, status=200)
 
 
