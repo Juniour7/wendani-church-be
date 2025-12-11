@@ -169,3 +169,20 @@ MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE")
 MPESA_EXPRESS_SHORTCODE = os.getenv("MPESA_EXPRESS_SHORTCODE")
 MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
 MPESA_SHORTCODE_TYPE = "paybill"  # 'paybill' or 'till_number'
+
+
+# ---------------------------------------------------------
+# CO-OP BANK INTEGRATION
+# ---------------------------------------------------------
+COOPBANK_AUTH_HEADER = os.getenv("COOPBANK_AUTH_HEADER")
+
+COOPBANK_OPERATOR_CODE = os.getenv("COOPBANK_OPERATOR_CODE")
+COOPBANK_USER_ID = os.getenv("COOPBANK_USER_ID")
+
+COOPBANK_TOKEN_URL = os.getenv("COOPBANK_TOKEN_URL")
+COOPBANK_STK_URL = os.getenv("COOPBANK_STK_URL")
+COOPBANK_STATUS_URL = os.getenv("COOPBANK_STATUS_URL")
+
+COOPBANK_CALLBACK_URL = os.getenv("COOPBANK_CALLBACK_URL")
+
+

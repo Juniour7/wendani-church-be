@@ -9,6 +9,7 @@ from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
+from .coopbank import stk_push_request
 
 from .models import MpesaTransaction, MpesaPurpose
 from .serializers import MpesaTransactionSerializer
@@ -24,64 +25,69 @@ class InitiatePaymentAPIView(APIView):
         serializer = MpesaTransactionSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=400)
 
         validated = serializer.validated_data
-        phone_number = validated.get("phone_number")
-        purposes = validated.get("purposes")   # list of {"purpose", "amount", ...}
+        phone = validated["phone_number"]
+        purposes = validated["purposes"]
 
-        # Normalize phone number
-        if phone_number.startswith("0"):
-            phone_number = "254" + phone_number[1:]
-        elif phone_number.startswith("+"):
-            phone_number = phone_number[1:]
+        # Normalize phone
+        if phone.startswith("0"):
+            phone = "254" + phone[1:]
+        elif phone.startswith("+"):
+            phone = phone[1:]
 
-        # Determine STK label (#TITHE, #MULTI, etc.)
+        # ----- Build Co-op OtherDetails -----
+        other_details = []
+        total_amount = 0
+
+        for p in purposes:
+            purpose_name = p["purpose"]
+            amount = int(p["amount"])
+            total_amount += amount
+
+            # Custom field support
+            if purpose_name == "Other" and p.get("other_purpose_details"):
+                key = p["other_purpose_details"]
+            else:
+                key = purpose_name
+
+            other_details.append({"Name": key, "Value": str(amount)})
+
+        # Tag for narration
         if len(purposes) == 1:
-            tag = purposes[0]["purpose"].upper().replace(" ", "")
+            tag = purposes[0]["purpose"].replace(" ", "")
         else:
             tag = "MULTI"
 
-        account_reference = f"441211#{tag}"
-        transaction_desc = f"#{tag}"
+        reference = f"SDA-{tag}-{int(datetime.now().timestamp())}"
 
-        # SUM all amounts
-        total_amount = sum([p["amount"] for p in purposes])
+        # ----- Save to DB -----
+        transaction = serializer.save(
+            checkout_request_id=reference,
+            total_amount=total_amount
+        )
 
-        cl = MpesaClient()
-
+        # ----- Call Co-op Bank -----
         try:
-            response = cl.stk_push(
-                phone_number=phone_number,
+            response = stk_push_request(
+                phone=phone,
                 amount=int(total_amount),
-                account_reference=account_reference,
-                transaction_desc=transaction_desc,
-                callback_url='https://churchmedia.kahawawendanisda.org/api/v1/mpesa/callback'
+                reference=reference,
+                other_details=other_details,
+                description=tag
             )
-
-            checkout_request_id = getattr(response, "checkout_request_id", None)
-            if not checkout_request_id:
-                return Response(
-                    {"error": "MPESA did not return a CheckoutRequestID"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Save parent + child purposes
-            transaction = serializer.save(
-                checkout_request_id=checkout_request_id,
-                total_amount=total_amount
-            )
-
-            return Response(
-                {
-                    "message": "STK push initiated successfully. Please enter your PIN.",
-                    "data": MpesaTransactionSerializer(transaction).data
-                },
-                status=status.HTTP_201_CREATED
-            )
-
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(e)}, status=500)
+
+        return Response({
+            "message": "STK Push sent. Enter PIN.",
+            "checkout_request_id": reference,
+            "amount": total_amount,
+            "co_op_response": response,
+        }, status=201)
+
+
 
 
 
@@ -93,55 +99,30 @@ class MpesaCallbackView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        stk_callback = data.get('Body', {}).get('stkCallback', {})
 
-        result_code = stk_callback.get('ResultCode')
-        checkout_request_id = stk_callback.get('CheckoutRequestID')
-
-        if not checkout_request_id:
-            return Response(
-                {"error": "Missing CheckoutRequestID in callback"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        reference = data.get("MessageReference")
+        if not reference:
+            return Response({"error": "Missing MessageReference"}, status=400)
 
         try:
-            transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
+            trx = MpesaTransaction.objects.get(checkout_request_id=reference)
         except MpesaTransaction.DoesNotExist:
-            return Response(
-                {"error": "Transaction with this CheckoutRequestID not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Transaction not found"}, status=404)
 
-        # Avoid double processing
-        if transaction.status in ["SUCCESS", "FAILED"]:
-            return Response(
-                {"status": f"Transaction already processed: {transaction.status}"},
-                status=status.HTTP_200_OK
-            )
+        response_code = data.get("ResponseCode")
+        result = data.get("Result", {})
 
-        # SUCCESS
-        if result_code == 0:
-            transaction.status = "SUCCESS"
-            callback_metadata = stk_callback.get("CallbackMetadata", {}).get("Item", [])
-
-            for item in callback_metadata:
-                if item.get("Name") == "MpesaReceiptNumber":
-                    transaction.mpesa_receipt_number = item.get("Value")
-                elif item.get("Name") == "TransactionDate":
-                    date_str = str(item.get("Value"))
-                    try:
-                        transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
-                    except ValueError:
-                        pass
-
-            transaction.save()
-
-        # FAILURE
+        if response_code == "0":
+            trx.status = "SUCCESS"
+            trx.mpesa_receipt_number = result.get("MpesaReceiptNumber")
+            trx.transaction_date = datetime.now()
         else:
-            transaction.status = "FAILED"
-            transaction.save()
+            trx.status = "FAILED"
 
-        return Response({"status": "Callback processed successfully"}, status=status.HTTP_200_OK)
+        trx.save()
+
+        return Response({"status": "callback processed"})
+
 
 
 
