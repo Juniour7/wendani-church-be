@@ -94,34 +94,51 @@ class InitiatePaymentAPIView(APIView):
 # ------------------------ M-Pesa Callback View ------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class MpesaCallbackView(APIView):
+    """
+    Handle Co-op Bank STK push callback
+    """
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         data = request.data
 
-        reference = data.get("MessageReference")
-        if not reference:
-            return Response({"error": "Missing MessageReference"}, status=400)
-
-        try:
-            trx = MpesaTransaction.objects.get(checkout_request_id=reference)
-        except MpesaTransaction.DoesNotExist:
-            return Response({"error": "Transaction not found"}, status=404)
-
+        message_ref = data.get("MessageReference")
         response_code = data.get("ResponseCode")
         result = data.get("Result", {})
 
+        if not message_ref:
+            return Response({"error": "Missing MessageReference"}, status=400)
+
+        try:
+            transaction = MpesaTransaction.objects.get(checkout_request_id=message_ref)
+        except MpesaTransaction.DoesNotExist:
+            return Response({"error": "Transaction not found"}, status=404)
+
+        # Avoid double processing
+        if transaction.status in ["SUCCESS", "FAILED"]:
+            return Response({"status": f"Transaction already processed: {transaction.status}"}, status=200)
+
         if response_code == "0":
-            trx.status = "SUCCESS"
-            trx.mpesa_receipt_number = result.get("MpesaReceiptNumber")
-            trx.transaction_date = datetime.now()
+            # Payment successful
+            transaction.status = "SUCCESS"
+            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
+            # If Co-op returns a transaction date, parse it; else use now()
+            date_str = result.get("TransactionDate")
+            if date_str:
+                try:
+                    transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+                except ValueError:
+                    transaction.transaction_date = datetime.now()
+            else:
+                transaction.transaction_date = datetime.now()
         else:
-            trx.status = "FAILED"
+            # Payment failed
+            transaction.status = "FAILED"
 
-        trx.save()
+        transaction.save()
 
-        return Response({"status": "callback processed"})
+        return Response({"status": "Callback processed successfully"}, status=200)
 
 
 
