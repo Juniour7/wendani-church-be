@@ -5,7 +5,6 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
@@ -60,7 +59,7 @@ class InitiatePaymentAPIView(APIView):
         else:
             tag = "MULTI"
 
-        reference = f"{tag}"
+        reference = f"{tag}-{int(datetime.utcnow().timestamp())}"
 
         # ----- Save to DB -----
         transaction = serializer.save(
