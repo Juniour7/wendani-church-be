@@ -76,6 +76,11 @@ class InitiatePaymentAPIView(APIView):
                 other_details=other_details,
                 description=tag
             )
+
+            # Save transaction using bank-provided MessageReference
+            message_ref = response.get("MessageReference")  # e.g., "Offering-1765464080"
+            transaction.checkout_request_id = message_ref
+            transaction.save()
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
@@ -93,15 +98,11 @@ class InitiatePaymentAPIView(APIView):
 # ------------------------ M-Pesa Callback View ------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class MpesaCallbackView(APIView):
-    """
-    Handle Co-op Bank STK push callback
-    """
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         data = request.data
-
         message_ref = data.get("MessageReference")
         response_code = data.get("ResponseCode")
         result = data.get("Result", {})
@@ -112,31 +113,26 @@ class MpesaCallbackView(APIView):
         try:
             transaction = MpesaTransaction.objects.get(checkout_request_id=message_ref)
         except MpesaTransaction.DoesNotExist:
+            # Optionally: log this for debugging
             return Response({"error": "Transaction not found"}, status=404)
 
         # Avoid double processing
         if transaction.status in ["SUCCESS", "FAILED"]:
             return Response({"status": f"Transaction already processed: {transaction.status}"}, status=200)
 
-        # Default transaction_date
-        transaction_date = datetime.now()
-
         if response_code == "0":
-            # Payment successful
             transaction.status = "SUCCESS"
-            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber") or result.get("ReceiptNumber")
-            # Parse transaction date if provided
-            date_str = result.get("TransactionDate") or result.get("TransDate")
+            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
+            date_str = result.get("TransactionDate")
             if date_str:
                 try:
-                    transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+                    transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
                 except ValueError:
-                    transaction_date = datetime.now()
-            transaction.transaction_date = transaction_date
+                    transaction.transaction_date = datetime.now()
+            else:
+                transaction.transaction_date = datetime.now()
         else:
-            # Payment failed
             transaction.status = "FAILED"
-            transaction.transaction_date = transaction_date
 
         transaction.save()
         return Response({"status": "Callback processed successfully"}, status=200)
