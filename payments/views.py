@@ -37,7 +37,7 @@ class InitiatePaymentAPIView(APIView):
         elif phone.startswith("+"):
             phone = phone[1:]
 
-        # ----- Build Co-op OtherDetails and calculate total_amount -----
+        # ----- Build Co-op OtherDetails -----
         other_details = []
         total_amount = 0
 
@@ -60,42 +60,32 @@ class InitiatePaymentAPIView(APIView):
         else:
             tag = "MULTI"
 
-        # ----- Save transaction WITHOUT checkout_request_id -----
-        transaction = serializer.save(total_amount=total_amount)
+        reference = f"{tag}"
 
-        # ----- Call Co-op Bank STK Push -----
+        # ----- Save to DB -----
+        transaction = serializer.save(
+            checkout_request_id=reference,
+            total_amount=total_amount
+        )
+
+        # ----- Call Co-op Bank -----
         try:
             response = stk_push_request(
                 phone=phone,
                 amount=int(total_amount),
-                reference=tag,             # local reference for Co-op
+                reference=reference,
                 other_details=other_details,
                 description=tag
             )
         except Exception as e:
-            # If STK push fails, mark transaction as failed
-            transaction.status = "FAILED"
-            transaction.save(update_fields=["status"])
             return Response({"error": str(e)}, status=500)
-
-        # ----- Update transaction with Co-op MessageReference -----
-        message_ref = response.get("MessageReference")
-        if not message_ref:
-            transaction.status = "FAILED"
-            transaction.save(update_fields=["status"])
-            return Response({"error": "No MessageReference returned from Co-op"}, status=500)
-
-        transaction.checkout_request_id = message_ref
-        transaction.save(update_fields=["checkout_request_id"])
 
         return Response({
             "message": "STK Push sent. Enter PIN.",
-            "checkout_request_id": message_ref,
+            "checkout_request_id": reference,
             "amount": total_amount,
             "co_op_response": response,
         }, status=201)
-
-
 
 
 
@@ -133,6 +123,7 @@ class MpesaCallbackView(APIView):
             # Payment successful
             transaction.status = "SUCCESS"
             transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
+            # If Co-op returns a transaction date, parse it; else use now()
             date_str = result.get("TransactionDate")
             if date_str:
                 try:
@@ -142,12 +133,12 @@ class MpesaCallbackView(APIView):
             else:
                 transaction.transaction_date = datetime.now()
         else:
+            # Payment failed
             transaction.status = "FAILED"
 
         transaction.save()
 
         return Response({"status": "Callback processed successfully"}, status=200)
-
 
 
 
