@@ -104,19 +104,14 @@ class MpesaCallbackView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        # --- DEBUGGING BLOCK START ---
         try:
-            # This creates a file named 'coop_callback_log.txt' in your project root
             with open("coop_callback_log.txt", "a") as f:
                 f.write(f"\n\n--- Callback Received at {datetime.now()} ---\n")
+                # Dump the raw JSON data to see exactly what the bank sent
                 f.write(json.dumps(request.data, indent=4))
         except Exception as e:
             print(f"Logging failed: {e}")
-        # --- DEBUGGING BLOCK END ---
-
-        data = request.data
-
-    def post(self, request, *args, **kwargs):
+    
         data = request.data
         message_ref = data.get("MessageReference")
         response_code = data.get("ResponseCode")
