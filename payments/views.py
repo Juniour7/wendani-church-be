@@ -86,7 +86,7 @@ class InitiatePaymentAPIView(APIView):
 
         return Response({
             "message": "STK Push sent. Enter PIN.",
-            "checkout_request_id": reference,
+            "checkout_request_id": transaction.checkout_request_id,
             "amount": total_amount,
             "co_op_response": response,
         }, status=201)
