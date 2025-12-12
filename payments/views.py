@@ -143,89 +143,71 @@ class MpesaCallbackView(APIView):
 
 
 # -------------- Using Cooop Status Check API --------------
-class CoopTransactionStatusAPIView(APIView):
-    """
-    Poll Co-op Bank STK Push transaction status and update local DB if exists.
-    """
-
-    permission_classes = [AllowAny]
-
+class CoopTransactionStatusCheckAPIView(APIView):
     def post(self, request):
-        # Accept either 'checkout_request_id' or 'MessageReference'
-        checkout_request_id = request.data.get("checkout_request_id")
-        message_reference = request.data.get("MessageReference")
+        message_ref = request.data.get("MessageReference")
 
-        if not checkout_request_id and not message_reference:
+        if not message_ref:
             return Response(
-                {"error": "Either checkout_request_id or MessageReference is required."},
-                status=400
+                {"error": "MessageReference is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        # If checkout_request_id is provided, look up local transaction
-        if checkout_request_id:
-            try:
-                transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
-                message_reference = transaction.coop_message_reference
-            except MpesaTransaction.DoesNotExist:
-                return Response({"status": "not_found"}, status=404)
-        else:
-            transaction = None  # Optional, in case you only want to query Co-op
+        # Get token
+        token = generate_token()
+        if not token:
+            return Response(
+                {"error": "Unable to get access token"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        if not message_reference:
-            return Response({"error": "MessageReference could not be determined."}, status=400)
-
-        # Generate Co-op token
-        token = generate_token()  # Must return valid bearer token
+        url = settings.COOPBANK_STATUS_URL
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        payload = {"MessageReference": message_reference}
 
-        # Call Co-op STK Push Status API
+        payload = {"MessageReference": message_ref}
+
         try:
-            response = requests.post(
-                settings.COOPBANK_STATUS_URL,
-                json=payload,
-                headers=headers,
-                timeout=10
-            )
-            response.raise_for_status()
-            data = response.json()
-        except requests.RequestException as e:
-            return Response({"error": f"Co-op API request failed: {str(e)}"}, status=502)
-        except ValueError:
-            return Response({"error": "Co-op API returned invalid JSON"}, status=502)
+            resp = requests.post(url, json=payload, headers=headers)
+            data = resp.json()
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Parse Co-op API response
-        response_code = data.get("ResponseCode")
-        result = data.get("Result", {})
+        coop_code = str(data.get("MessageCode"))
+        coop_desc = data.get("MessageDescription")
+        coop_details = data.get("MessageDetails")
 
-        # Update local DB if transaction exists
-        if transaction:
-            if response_code == "0":
-                transaction.status = "SUCCESS"
-                transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
-                date_str = result.get("TransactionDate")
-                if date_str:
-                    try:
-                        transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
-                    except ValueError:
-                        transaction.transaction_date = datetime.now()
-                else:
-                    transaction.transaction_date = datetime.now()
-            else:
-                transaction.status = "FAILED"
-            transaction.save()
+        # Interpret status
+        if coop_code in ["0", "S_000"]:
+            status_result = "SUCCESS"
+        elif coop_code in ["1", "E_002"]:
+            status_result = "FAILED"
+        elif coop_code == "S_001":
+            status_result = "PROCESSING"
+        elif coop_code in ["E_003", "E_005"]:
+            status_result = "NOT_FOUND"
+        else:
+            status_result = "UNKNOWN"
 
-        # Return cleaned response
+        # Update DB if record exists
+        try:
+            tx = MpesaTransaction.objects.get(checkout_request_id=message_ref)
+            tx.status = status_result
+            tx.save()
+        except MpesaTransaction.DoesNotExist:
+            pass  # Not fatal
+
         return Response({
-            "status": "SUCCESS" if response_code == "0" else "FAILED",
-            "mpesa_receipt_number": result.get("MpesaReceiptNumber"),
-            "transaction_date": result.get("TransactionDate"),
-            "response_code": response_code,
-            "response_message": result.get("ResponseMessage", "")
+            "checkout_request_id": message_ref,
+            "coop_message_code": coop_code,
+            "coop_message_description": coop_desc,
+            "coop_message_details": coop_details,
+            "status": status_result,
+            "raw": data
         })
+
 
 
 
