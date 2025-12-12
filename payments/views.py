@@ -66,7 +66,8 @@ class InitiatePaymentAPIView(APIView):
         # ----- Save to DB -----
         transaction = serializer.save(
             checkout_request_id=reference,
-            total_amount=total_amount
+            total_amount=total_amount,
+            status="PENDING"
         )
 
         # ----- Call Co-op Bank -----
@@ -79,16 +80,14 @@ class InitiatePaymentAPIView(APIView):
                 description=tag
             )
 
-            # Save transaction using bank-provided MessageReference
-            message_ref = response.get("MessageReference")  # e.g., "Offering-1765464080"
-            transaction.checkout_request_id = message_ref
-            transaction.save()
         except Exception as e:
+            transaction.status = "FAILED"
+            transaction.save()
             return Response({"error": str(e)}, status=500)
 
         return Response({
             "message": "STK Push sent. Enter PIN.",
-            "checkout_request_id": transaction.checkout_request_id,
+            "checkout_request_id": reference,
             "amount": total_amount,
             "co_op_response": response,
         }, status=201)
@@ -104,14 +103,6 @@ class MpesaCallbackView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        try:
-            with open("coop_callback_log.txt", "a") as f:
-                f.write(f"\n\n--- Callback Received at {datetime.now()} ---\n")
-                # Dump the raw JSON data to see exactly what the bank sent
-                f.write(json.dumps(request.data, indent=4))
-        except Exception as e:
-            print(f"Logging failed: {e}")
-    
         data = request.data
         message_ref = data.get("MessageReference")
         response_code = data.get("ResponseCode")
