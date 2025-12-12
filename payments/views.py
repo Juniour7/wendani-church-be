@@ -144,6 +144,9 @@ class MpesaCallbackView(APIView):
 
 # -------------- Using Cooop Status Check API --------------
 class CoopTransactionStatusAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    
     def post(self, request):
         message_ref = request.data.get("MessageReference")
 
