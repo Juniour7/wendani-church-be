@@ -143,7 +143,7 @@ class MpesaCallbackView(APIView):
 
 
 # -------------- Using Cooop Status Check API --------------
-class CoopTransactionStatusCheckAPIView(APIView):
+class CoopTransactionStatusAPIView(APIView):
     def post(self, request):
         message_ref = request.data.get("MessageReference")
 
