@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
 from .coopbank import stk_push_request
+import json
+import os
 
 from .models import MpesaTransaction, MpesaPurpose
 from .serializers import MpesaTransactionSerializer
@@ -100,6 +102,19 @@ class InitiatePaymentAPIView(APIView):
 class MpesaCallbackView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        # --- DEBUGGING BLOCK START ---
+        try:
+            # This creates a file named 'coop_callback_log.txt' in your project root
+            with open("coop_callback_log.txt", "a") as f:
+                f.write(f"\n\n--- Callback Received at {datetime.now()} ---\n")
+                f.write(json.dumps(request.data, indent=4))
+        except Exception as e:
+            print(f"Logging failed: {e}")
+        # --- DEBUGGING BLOCK END ---
+
+        data = request.data
 
     def post(self, request, *args, **kwargs):
         data = request.data
