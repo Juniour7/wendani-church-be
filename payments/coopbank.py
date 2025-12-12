@@ -55,3 +55,25 @@ def stk_push_request(phone, amount, reference, other_details, description):
     response = requests.post(settings.COOPBANK_STK_URL, json=payload, headers=headers)
     response.raise_for_status()
     return response.json()
+
+
+# ------------------------------------------------------
+# Send STK Push
+# ------------------------------------------------------
+def stk_status_request(message_reference: str):
+    """
+    Check STK push transaction status using Co-op Bank API.
+    """
+    token = generate_token()
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {"MessageReference": message_reference}
+
+    url = "https://openapi.co-opbank.co.ke/Enquiry/STK/1.0.0/"
+    response = requests.post(url, json=payload, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()

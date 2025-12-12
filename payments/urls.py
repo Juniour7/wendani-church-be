@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import InitiatePaymentAPIView, MpesaCallbackView, MpesaTransactionsAPIView, TransactionStatusAPIView
+from .views import InitiatePaymentAPIView, MpesaCallbackView, MpesaTransactionsAPIView, TransactionStatusAPIView, CoopTransactionStatusAPIView
 
 urlpatterns = [
     # API endpoint to start the payment process
@@ -10,5 +10,8 @@ urlpatterns = [
 
     # Endpint to view all transactions that have been made
     path('transactions/', MpesaTransactionsAPIView.as_view(), name='mpesa_transaction_list'),
-    path('status-check/', TransactionStatusAPIView.as_view(), name='status-check')
+    path('status-check/', TransactionStatusAPIView.as_view(), name='status-check'),
+
+    # Check / poll transaction status from Co-op Bank
+    path('check-status/', CoopTransactionStatusAPIView.as_view(), name='coop-transaction-status'),
 ]

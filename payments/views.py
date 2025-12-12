@@ -8,10 +8,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
-from .coopbank import stk_push_request
-import json
-import os
-
+from .coopbank import stk_push_request, generate_token
+import requests
+from django.conf import settings
 from .models import MpesaTransaction, MpesaPurpose
 from .serializers import MpesaTransactionSerializer
 from .permissions import IsTreasurer
@@ -137,9 +136,81 @@ class MpesaCallbackView(APIView):
 
         transaction.save()
         return Response({"status": "Callback processed successfully"}, status=200)
+    
 
 
+# -------------- Using Cooop Status Check API --------------
+class CoopTransactionStatusAPIView(APIView):
+    """
+    Poll Co-op Bank for a specific transaction status and update DB.
+    """
 
+    permission_classes = []  # or AllowAny
+
+    def get(self, request):
+        checkout_request_id = request.query_params.get("checkout_request_id")
+        if not checkout_request_id:
+            return Response({"error": "checkout_request_id is required"}, status=400)
+
+        try:
+            transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
+        except MpesaTransaction.DoesNotExist:
+            return Response({"status": "not_found"}, status=404)
+
+        # Only query if still pending
+        if transaction.status not in ["PENDING"]:
+            # Already processed
+            return Response({
+                "status": transaction.status,
+                "mpesa_receipt_number": transaction.mpesa_receipt_number,
+                "transaction_date": transaction.transaction_date
+            })
+
+        # Generate Co-op token
+        token = generate_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"MessageReference": transaction.checkout_request_id}
+
+        try:
+            response = requests.post(
+                settings.COOPBANK_STK_STATUS_URL,
+                json=payload,
+                headers=headers,
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as e:
+            return Response({"error": str(e)}, status=500)
+
+        response_code = data.get("ResponseCode")
+        result = data.get("Result", {})
+
+        # Update DB based on response
+        if response_code == "0":
+            transaction.status = "SUCCESS"
+            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
+            date_str = result.get("TransactionDate")
+            if date_str:
+                try:
+                    transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+                except ValueError:
+                    transaction.transaction_date = datetime.now()
+            else:
+                transaction.transaction_date = datetime.now()
+        elif response_code is not None:
+            transaction.status = "FAILED"
+
+        transaction.save()
+
+        return Response({
+            "status": transaction.status,
+            "mpesa_receipt_number": transaction.mpesa_receipt_number,
+            "transaction_date": transaction.transaction_date
+        })
 
 # ----------------- View All Transactions -------------------
 class MpesaTransactionsAPIView(ListAPIView):
