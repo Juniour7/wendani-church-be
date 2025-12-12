@@ -6,7 +6,11 @@ class MpesaTransaction(models.Model):
     phone_number = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)
 
+    # Internal unique reference for your system
     checkout_request_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
+
+    # Co-op Bank reference (from the response)
+    coop_message_reference = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=20, default='PENDING')
     mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
     transaction_date = models.DateTimeField(blank=True, null=True)

@@ -79,6 +79,9 @@ class InitiatePaymentAPIView(APIView):
                 description=tag
             )
 
+            transaction.coop_message_reference = response.get("MessageReference")
+            transaction.save()
+
         except Exception as e:
             transaction.status = "FAILED"
             transaction.save()
@@ -172,7 +175,7 @@ class CoopTransactionStatusAPIView(APIView):
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
-        payload = {"MessageReference": transaction.checkout_request_id}
+        payload = {"MessageReference": transaction.coop_message_reference}
 
         try:
             response = requests.post(
@@ -211,6 +214,8 @@ class CoopTransactionStatusAPIView(APIView):
             "mpesa_receipt_number": transaction.mpesa_receipt_number,
             "transaction_date": transaction.transaction_date
         })
+
+
 
 # ----------------- View All Transactions -------------------
 class MpesaTransactionsAPIView(ListAPIView):
