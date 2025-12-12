@@ -193,7 +193,7 @@ class CoopTransactionStatusCheckAPIView(APIView):
 
         # Update DB if record exists
         try:
-            tx = MpesaTransaction.objects.get(checkout_request_id=message_ref)
+            tx = MpesaTransaction.objects.get(coop_message_reference=message_ref)
             tx.status = status_result
             tx.save()
         except MpesaTransaction.DoesNotExist:
