@@ -61,7 +61,7 @@ class InitiatePaymentAPIView(APIView):
         else:
             tag = "MULTI"
 
-        reference = f"{tag}"
+        reference = f"{tag}-{int(datetime.utcnow().timestamp())}"
 
         # ----- Save to DB -----
         transaction = serializer.save(
