@@ -99,46 +99,77 @@ class InitiatePaymentAPIView(APIView):
 
 
 # ------------------------ M-Pesa Callback View ------------------------
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class MpesaCallbackView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         data = request.data
+
         message_ref = data.get("MessageReference")
-        response_code = data.get("ResponseCode")
-        result = data.get("Result", {})
+        message_code = str(data.get("MessageCode"))
+        message_datetime = data.get("MessageDateTime")
 
         if not message_ref:
             return Response({"error": "Missing MessageReference"}, status=400)
 
         try:
-            transaction = MpesaTransaction.objects.get(checkout_request_id=message_ref)
+            transaction = MpesaTransaction.objects.get(
+                checkout_request_id=message_ref
+            )
         except MpesaTransaction.DoesNotExist:
-            # Optionally: log this for debugging
             return Response({"error": "Transaction not found"}, status=404)
 
-        # Avoid double processing
+        # Prevent double processing
         if transaction.status in ["SUCCESS", "FAILED"]:
-            return Response({"status": f"Transaction already processed: {transaction.status}"}, status=200)
+            return Response(
+                {"status": f"Already processed: {transaction.status}"},
+                status=200
+            )
 
-        if response_code == "0":
+        # ---- Extract metadata ----
+        metadata_items = (
+            data.get("TransactionMetadata", {})
+                .get("Items", [])
+        )
+
+        metadata = {
+            item.get("Name"): item.get("Value")
+            for item in metadata_items
+            if "Name" in item and "Value" in item
+        }
+
+        # ---- Extract receipt from Narration ----
+        receipt_number = None
+        narration = metadata.get("Narration")
+
+        if narration:
+            parts = narration.split("~")
+            if len(parts) >= 2:
+                receipt_number = parts[1]
+
+        # ---- Handle SUCCESS ----
+        if message_code == "0":
             transaction.status = "SUCCESS"
-            transaction.mpesa_receipt_number = result.get("MpesaReceiptNumber")
-            date_str = result.get("TransactionDate")
-            if date_str:
-                try:
-                    transaction.transaction_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
-                except ValueError:
-                    transaction.transaction_date = datetime.now()
-            else:
-                transaction.transaction_date = datetime.now()
+            transaction.mpesa_receipt_number = receipt_number
+            if message_datetime:
+                transaction.transaction_date = message_datetime
+
+        # ---- Handle USER CANCEL / WRONG PIN / FAILURES ----
+        elif message_code in ["1032", "2001"]:
+            transaction.status = "FAILED"
+
         else:
             transaction.status = "FAILED"
 
         transaction.save()
-        return Response({"status": "Callback processed successfully"}, status=200)
+
+        return Response(
+            {"status": "Callback processed successfully"},
+            status=200
+        )
+
     
 
 
