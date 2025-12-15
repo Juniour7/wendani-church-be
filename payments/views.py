@@ -109,7 +109,6 @@ class MpesaCallbackView(APIView):
 
         message_ref = data.get("MessageReference")
         message_code = str(data.get("MessageCode"))
-        message_datetime = data.get("MessageDateTime")
 
         if not message_ref:
             return Response({"error": "Missing MessageReference"}, status=400)
@@ -121,54 +120,14 @@ class MpesaCallbackView(APIView):
         except MpesaTransaction.DoesNotExist:
             return Response({"error": "Transaction not found"}, status=404)
 
-        # Prevent double processing
         if transaction.status in ["SUCCESS", "FAILED"]:
-            return Response(
-                {"status": f"Already processed: {transaction.status}"},
-                status=200
-            )
+            return Response({"status": "Already processed"}, status=200)
 
-        # ---- Extract metadata ----
-        metadata_items = (
-            data.get("TransactionMetadata", {})
-                .get("Items", [])
-        )
-
-        metadata = {
-            item.get("Name"): item.get("Value")
-            for item in metadata_items
-            if "Name" in item and "Value" in item
-        }
-
-        # ---- Extract receipt from Narration ----
-        receipt_number = None
-        narration = metadata.get("Narration")
-
-        if narration:
-            parts = narration.split("~")
-            if len(parts) >= 2:
-                receipt_number = parts[1]
-
-        # ---- Handle SUCCESS ----
-        if message_code == "0":
-            transaction.status = "SUCCESS"
-            transaction.mpesa_receipt_number = receipt_number
-            if message_datetime:
-                transaction.transaction_date = message_datetime
-
-        # ---- Handle USER CANCEL / WRONG PIN / FAILURES ----
-        elif message_code in ["1032", "2001"]:
-            transaction.status = "FAILED"
-
-        else:
-            transaction.status = "FAILED"
-
+        transaction.status = "SUCCESS" if message_code == "0" else "FAILED"
         transaction.save()
 
-        return Response(
-            {"status": "Callback processed successfully"},
-            status=200
-        )
+        return Response({"status": "Callback processed"}, status=200)
+
 
     
 
@@ -177,70 +136,74 @@ class MpesaCallbackView(APIView):
 class CoopTransactionStatusAPIView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         message_ref = request.data.get("MessageReference")
 
         if not message_ref:
-            return Response(
-                {"error": "MessageReference is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "MessageReference required"}, status=400)
 
-        # Get token
         token = generate_token()
         if not token:
-            return Response(
-                {"error": "Unable to get access token"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": "Token error"}, status=500)
 
-        url = settings.COOPBANK_STATUS_URL
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         }
 
-        payload = {"MessageReference": message_ref}
+        resp = requests.post(
+            settings.COOPBANK_STATUS_URL,
+            json={"MessageReference": message_ref},
+            headers=headers
+        )
 
-        try:
-            resp = requests.post(url, json=payload, headers=headers)
-            data = resp.json()
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        data = resp.json()
+        code = str(data.get("MessageCode"))
+        desc = data.get("MessageDescription")
+        details = data.get("MessageDetails")
 
-        coop_code = str(data.get("MessageCode"))
-        coop_desc = data.get("MessageDescription")
-        coop_details = data.get("MessageDetails")
-
-        # Interpret status
-        if coop_code in ["0", "S_000"]:
+        # Interpret state
+        if code == "0":
             status_result = "SUCCESS"
-        elif coop_code in ["1", "E_002"]:
-            status_result = "FAILED"
-        elif coop_code == "S_001":
+        elif code == "S_001":
             status_result = "PROCESSING"
-        elif coop_code in ["E_003", "E_005"]:
-            status_result = "NOT_FOUND"
+        elif code in ["1032", "2001"]:
+            status_result = "FAILED"
         else:
-            status_result = "UNKNOWN"
+            status_result = "FAILED"
 
-        # Update DB if record exists
+        # Update DB
         try:
-            tx = MpesaTransaction.objects.get(coop_message_reference=message_ref)
+            tx = MpesaTransaction.objects.get(checkout_request_id=message_ref)
+
+            items = data.get("TransactionMetadata", {}).get("Items", [])
+            meta = {i["Name"]: i["Value"] for i in items if "Name" in i}
+
+            narration = meta.get("Narration")
+            receipt = narration.split("~")[1] if narration and "~" in narration else None
+
             tx.status = status_result
+
+            if status_result == "SUCCESS":
+                if receipt:
+                    tx.mpesa_receipt_number = receipt
+                tx.transaction_date = data.get("MessageDateTime")
+
             tx.save()
+
         except MpesaTransaction.DoesNotExist:
-            pass  # Not fatal
+            pass
 
         return Response({
             "checkout_request_id": message_ref,
-            "coop_message_code": coop_code,
-            "coop_message_description": coop_desc,
-            "coop_message_details": coop_details,
+            "coop_message_code": code,
+            "coop_message_description": desc,
+            "coop_message_details": details,
             "status": status_result,
             "raw": data
         })
+
 
 
 
