@@ -29,7 +29,7 @@ class MpesaPurpose(models.Model):
     PURPOSE_CHOICES = [
         ('Tithe', 'Tithe'),
         ('Offering', 'Offering'),
-        ('Local Church Budget (LCB)', 'Local Church Budget (LCB)'),
+        ('Local Church', 'Local Church'),
         ('Camp Offering', 'Camp Offering'),
         ('Camp Expenses', 'Camp Expenses'),
         ('Evangelism', 'Evangelism'),
