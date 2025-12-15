@@ -34,6 +34,7 @@ class MpesaPurpose(models.Model):
         ('Camp Expenses', 'Camp Expenses'),
         ('Evangelism', 'Evangelism'),
         ('Station Dev', 'Station Dev'),
+        ('DEVGR', 'Development Group'),
         ('Other', 'Other'),
     ]
 

@@ -56,7 +56,11 @@ class InitiatePaymentAPIView(APIView):
 
         # Tag for narration
         if len(purposes) == 1:
-            tag = purposes[0]["purpose"].replace(" ", "")
+            p0 = purposes[0]
+            if p0["purpose"] == "DEVGR" and p0.get("other_purpose_details"):
+                tag=f"DEVGR{p0['other_purpose_details']}"
+            else:
+                tag = p0["purpose"].replace(" ", "")
         else:
             tag = "MULTI"
 
