@@ -116,7 +116,7 @@ class MpesaCallbackView(APIView):
 
         try:
             transaction = MpesaTransaction.objects.get(
-                checkout_request_id=message_ref
+                coop_message_reference=message_ref
             )
         except MpesaTransaction.DoesNotExist:
             return Response({"error": "Transaction not found"}, status=404)
