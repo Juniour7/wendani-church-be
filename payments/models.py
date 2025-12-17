@@ -18,11 +18,7 @@ class MpesaTransaction(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
-        # Display the selected purpose, or the other_purpose_details if 'Other' is chosen
-        display_purpose = self.get_purpose_display()
-        if self.purpose == 'Other' and self.other_purpose_details:
-            display_purpose = self.other_purpose_details
-        return f"{self.name} - {self.amount} - {display_purpose}"
+        return f"{self.name} - {self.status}"
 
 
 class MpesaPurpose(models.Model):
