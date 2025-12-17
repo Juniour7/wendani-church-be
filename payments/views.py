@@ -15,6 +15,36 @@ from .models import MpesaTransaction, MpesaPurpose
 from .serializers import MpesaTransactionSerializer
 from .permissions import IsTreasurer
 
+import uuid
+
+
+BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def int_to_base62(num, length=7):
+    """Convert an integer into base62 string for fixed length."""
+    arr = []
+    while num > 0:
+        num, rem = divmod(num, 62)
+        arr.append(BASE62[rem])
+    
+    # pad with '0's if necessary to reach fixed length
+    while len(arr) < length:
+        arr.append('0')
+    
+    return ''.join(reversed(arr))[:length]
+
+
+def short_uuid7():
+    u = uuid.uuid4()
+    # Convert UUID bytes to a large integer
+    num = int.from_bytes(u.bytes, byteorder='big')
+    # Convert integer to base62
+    return int_to_base62(num, length=7)
+
+
+
+
+
 
 # ----------------- API TO INITIATE PAYMENT -------------------
 class InitiatePaymentAPIView(APIView):
@@ -64,7 +94,7 @@ class InitiatePaymentAPIView(APIView):
         else:
             tag = "MULTI"
 
-        reference = f"{tag}-{int(datetime.utcnow().timestamp())}"
+        reference = f"{tag}-{short_uuid7()}"
 
         # ----- Save to DB -----
         transaction = serializer.save(
