@@ -183,3 +183,21 @@ COOPBANK_STATUS_URL = os.getenv("COOPBANK_STATUS_URL")
 COOPBANK_CALLBACK_URL = os.getenv("COOPBANK_CALLBACK_URL")
 
 
+# ---------------------------------------------------------
+# EMAIL CONFIGURATION SETTINGS
+# ---------------------------------------------------------
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv("EMAIL_HOST") 
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_SSL=True
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+# 2. Notification Recipient
+NOTIFICATION_EMAIL = os.getenv("EMAIL_HOST_USER")
+
+
+FRONTEND_BASE_URL = 'https://kahawawendanisda.org/admin/dashboard'
+
