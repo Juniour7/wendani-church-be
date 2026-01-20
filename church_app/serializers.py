@@ -31,6 +31,30 @@ class PrayerFormSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at']
     
+    def validate(self, attrs):
+        """
+        Enforce conditional required fields when visitation is requested
+        """
+        wants_visitation = attrs.get('wants_visitation')
+
+        if wants_visitation:
+            required_fields = {
+                'full_name': 'Full name is required when visitation is requested.',
+                'phone_number': 'Phone number is required when visitation is requested.',
+                'prayer_cell': 'Prayer cell name is required when visitation is requested.'
+            }
+
+            errors = {}
+            for field, message in required_fields.items():
+                value = attrs.get(field)
+                if value in [None, '', []]:
+                    errors[field] = message
+
+            if errors:
+                raise serializers.ValidationError(errors)
+            
+        return attrs
+    
     def to_representation(self, instance):
         """Ensure no null values are sent to frontend."""
         data = super().to_representation(instance)
